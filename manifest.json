@@ -1,0 +1,14 @@
+{
+  "manifest_version": 2,
+  "name": "Memory Loss",
+  "version": "1.0",
+
+  "description": "Persuades your browser to forget information after a while.",
+
+  "content_scripts": [
+    {
+      "matches": ["*://*.mozilla.org/*"],
+      "js": ["borderify.js"]
+    }
+  ]
+}
