@@ -10,3 +10,6 @@ build
 # TypeScript
 .log
 out
+
+# web-ext
+web-ext-artifacts

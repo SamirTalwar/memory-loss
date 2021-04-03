@@ -8,13 +8,28 @@
     "type": "git",
     "url": "git+ssh://git@github.com/SamirTalwar/memory-loss.git"
   },
-  "main": "src/main.js",
   "license": "MIT",
-  "dependencies": {
-    "typescript": "^4.2.3"
+  "main": "build/main.js",
+  "scripts": {
+    "build": "snowpack build",
+    "lint": "tsc --noEmit && web-ext lint",
+    "start": "./start.sh"
   },
   "devDependencies": {
     "snowpack": "^3.2.2",
+    "typescript": "^4.2.3",
+    "web-ext": "^6.0.0",
     "webextension-polyfill-ts": "^0.25.0"
+  },
+  "webExt": {
+    "verbose": true,
+    "ignoreFiles": [
+      "src",
+      "out",
+      "package-lock.json",
+      "shell.nix",
+      "snowpack.config.js",
+      "start.sh"
+    ]
   }
 }

@@ -4,6 +4,8 @@ mkShell {
   name = "memory-loss";
 
   buildInputs = [
+    entr
+    jq
     nodejs
   ];
 }
