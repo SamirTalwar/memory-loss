@@ -12,81 +12,81 @@ interface SetCookieHeader {
   render(): string;
 }
 
-export const parseSetCookieHeader = (
-  headerString: string,
-): SetCookieHeader | undefined => {
-  const [firstPair, ...pairs] = headerString.split(/;\s*/);
-  if (!firstPair) {
-    return;
-  }
-
-  const [name, value] = firstPair.split("=", 2);
-  if (!name || !value) {
-    return;
-  }
-
-  const sections = pairs.map((pair) => pair.split("=", 2));
-  const findBooleanValue = (sectionName: string): boolean => {
-    for (const section of sections) {
-      if ((section[0] || "").toLowerCase() === sectionName) {
-        return true;
-      }
+export const SetCookieHeader = {
+  parse: (headerString: string): SetCookieHeader | undefined => {
+    const [firstPair, ...pairs] = headerString.split(/;\s*/);
+    if (!firstPair) {
+      return;
     }
-    return false;
-  };
-  const findValue = (sectionName: string): string | undefined => {
-    for (const section of sections) {
-      if ((section[0] || "").toLowerCase() === sectionName) {
-        return section.length >= 2 ? section[1] : "";
-      }
+
+    const [name, value] = firstPair.split("=", 2);
+    if (!name || !value) {
+      return;
     }
-    return undefined;
-  };
-  const optionally = <A, B>(
-    f: (value: A) => B,
-    value: A | undefined,
-  ): B | undefined => {
-    if (value == null) {
+
+    const sections = pairs.map((pair) => pair.split("=", 2));
+    const findBooleanValue = (sectionName: string): boolean => {
+      for (const section of sections) {
+        if ((section[0] || "").toLowerCase() === sectionName) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const findValue = (sectionName: string): string | undefined => {
+      for (const section of sections) {
+        if ((section[0] || "").toLowerCase() === sectionName) {
+          return section.length >= 2 ? section[1] : "";
+        }
+      }
       return undefined;
-    } else {
-      return f(value);
-    }
-  };
+    };
+    const optionally = <A, B>(
+      f: (value: A) => B,
+      value: A | undefined,
+    ): B | undefined => {
+      if (value == null) {
+        return undefined;
+      } else {
+        return f(value);
+      }
+    };
 
-  const self = {
-    name() {
-      return name;
-    },
-    value() {
-      return value[0] === '"' && value[value.length - 1] === '"'
-        ? value.substring(1, value.length - 1)
-        : value;
-    },
-    expires() {
-      return optionally((s) => new Date(s), findValue("expires"));
-    },
-    maxAge() {
-      return optionally(parseInt, findValue("max-age"));
-    },
-    domain() {
-      return findValue("domain");
-    },
-    path() {
-      return findValue("path");
-    },
-    secure() {
-      return findBooleanValue("secure");
-    },
-    httpOnly() {
-      return findBooleanValue("httponly");
-    },
-    sameSite() {
-      return findValue("samesite")?.toLowerCase();
-    },
+    const self = {
+      name() {
+        return name;
+      },
+      value() {
+        return value[0] === '"' && value[value.length - 1] === '"'
+          ? value.substring(1, value.length - 1)
+          : value;
+      },
+      expires() {
+        return optionally((s) => new Date(s), findValue("expires"));
+      },
+      maxAge() {
+        return optionally(parseInt, findValue("max-age"));
+      },
+      domain() {
+        return findValue("domain");
+      },
+      path() {
+        return findValue("path");
+      },
+      secure() {
+        return findBooleanValue("secure");
+      },
+      httpOnly() {
+        return findBooleanValue("httponly");
+      },
+      sameSite() {
+        return findValue("samesite")?.toLowerCase();
+      },
 
-    render() {
-      return [firstPair, ...pairs].join("; ");
-    },
-  };
-  return self;
+      render() {
+        return [firstPair, ...pairs].join("; ");
+      },
+    };
+    return self;
+  },
 };

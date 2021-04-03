@@ -1,10 +1,10 @@
 import test from "ava";
 
-import {parseSetCookieHeader} from "../src/cookie_header.js";
+import {SetCookieHeader} from "../src/cookie_header.js";
 
 test("parse a simple header", (t) => {
   const header = "name=value";
-  const parsedHeader = parseSetCookieHeader(header);
+  const parsedHeader = SetCookieHeader.parse(header);
   if (!parsedHeader) {
     t.fail("Parsed header was undefined.");
     return;
@@ -23,7 +23,7 @@ test("parse a simple header", (t) => {
 test("parse a complex header", (t) => {
   const header =
     'name="this is a long value!"; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Max-Age=2592000; Domain=example.com; Path=/dir; Secure; HttpOnly; SameSite=Strict';
-  const parsedHeader = parseSetCookieHeader(header);
+  const parsedHeader = SetCookieHeader.parse(header);
   if (!parsedHeader) {
     t.fail("Parsed header was undefined.");
     return;
@@ -44,7 +44,7 @@ test("parse a complex header", (t) => {
 
 test("render a simple header", (t) => {
   const header = "name=some value";
-  const parsedHeader = parseSetCookieHeader(header);
+  const parsedHeader = SetCookieHeader.parse(header);
   if (!parsedHeader) {
     t.fail("Header was undefined.");
     return;
@@ -56,7 +56,7 @@ test("render a simple header", (t) => {
 test("render a complex header in the same order it's parsed", (t) => {
   const header =
     "name=value; Expires=Sat, 3 Apr 2021 12:34:56 CEST; Max-Age=604800; Domain=www.example.com; Path=/dir; HttpOnly; SameSite=Strict";
-  const parsedHeader = parseSetCookieHeader(header);
+  const parsedHeader = SetCookieHeader.parse(header);
   if (!parsedHeader) {
     t.fail("Header was undefined.");
     return;
