@@ -23,7 +23,7 @@
     "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true,
 
-    "rootDirs": ["src"],
+    "rootDirs": ["src", "test"],
     "esModuleInterop": true,
 
     "skipLibCheck": true,
