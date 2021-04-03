@@ -1,0 +1,20 @@
+{
+  "name": "memory-loss",
+  "version": "0.1.0",
+  "description": "Persuades your browser to forget information after a while.",
+  "author": "Samir Talwar <samir@noodlesandwich.com>",
+  "homepage": "https://github.com/SamirTalwar/memory-loss#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/SamirTalwar/memory-loss.git"
+  },
+  "main": "src/main.js",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^4.2.3"
+  },
+  "devDependencies": {
+    "snowpack": "^3.2.2",
+    "webextension-polyfill-ts": "^0.25.0"
+  }
+}

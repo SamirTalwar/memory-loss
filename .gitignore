@@ -1,2 +1,12 @@
+# Direnv
+.direnv
+
+# node.js
+node_modules
+
+# Snowpack
+build
+
 # TypeScript
 .log
+out

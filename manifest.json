@@ -14,6 +14,6 @@
   },
 
   "background": {
-    "scripts": ["src/main.js"]
+    "scripts": ["build/main.js"]
   }
 }
