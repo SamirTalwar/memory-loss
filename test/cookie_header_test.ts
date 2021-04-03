@@ -41,3 +41,26 @@ test("parse a complex header", (t) => {
   t.is(parsedHeader.httpOnly(), true);
   t.is(parsedHeader.sameSite(), "strict");
 });
+
+test("render a simple header", (t) => {
+  const header = "name=some value";
+  const parsedHeader = parseSetCookieHeader(header);
+  if (!parsedHeader) {
+    t.fail("Header was undefined.");
+    return;
+  }
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
+test("render a complex header in the same order it's parsed", (t) => {
+  const header =
+    "name=value; Expires=Sat, 3 Apr 2021 12:34:56 CEST; Max-Age=604800; Domain=www.example.com; Path=/dir; HttpOnly; SameSite=Strict";
+  const parsedHeader = parseSetCookieHeader(header);
+  if (!parsedHeader) {
+    t.fail("Header was undefined.");
+    return;
+  }
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});

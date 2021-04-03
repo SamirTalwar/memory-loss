@@ -8,6 +8,8 @@ interface SetCookieHeader {
   secure(): boolean;
   httpOnly(): boolean;
   sameSite(): string | undefined;
+
+  render(): string;
 }
 
 export const parseSetCookieHeader = (
@@ -51,7 +53,7 @@ export const parseSetCookieHeader = (
     }
   };
 
-  return {
+  const self = {
     name() {
       return name;
     },
@@ -81,5 +83,10 @@ export const parseSetCookieHeader = (
     sameSite() {
       return findValue("samesite")?.toLowerCase();
     },
+
+    render() {
+      return [firstPair, ...pairs].join("; ");
+    },
   };
+  return self;
 };
