@@ -1,64 +1,85 @@
 interface SetCookieHeader {
-  name: string;
-  value: string;
-  expires?: Date;
-  maxAge?: number;
-  domain?: string;
-  path?: string;
-  secure?: boolean;
-  httpOnly?: boolean;
-  sameSite?: string;
+  name(): string;
+  value(): string;
+  expires(): Date | undefined;
+  maxAge(): number | undefined;
+  domain(): string | undefined;
+  path(): string | undefined;
+  secure(): boolean;
+  httpOnly(): boolean;
+  sameSite(): string | undefined;
 }
 
 export const parseSetCookieHeader = (
   headerString: string,
 ): SetCookieHeader | undefined => {
-  const [firstSection, ...sections] = headerString.split(/;\s*/);
-  if (!firstSection) {
+  const [firstPair, ...pairs] = headerString.split(/;\s*/);
+  if (!firstPair) {
     return;
   }
-  const [name, value] = firstSection.split("=", 2);
+
+  const [name, value] = firstPair.split("=", 2);
   if (!name || !value) {
     return;
   }
-  const unquotedValue =
-    value[0] === '"' && value[value.length - 1] === '"'
-      ? value.substring(1, value.length - 1)
-      : value;
-  const header: SetCookieHeader = {name, value: unquotedValue};
-  for (const section of sections) {
-    const [sectionName, sectionValue] = section.split("=", 2);
-    if (!sectionName) {
-      continue;
+
+  const sections = pairs.map((pair) => pair.split("=", 2));
+  const findBooleanValue = (sectionName: string): boolean => {
+    for (const section of sections) {
+      if ((section[0] || "").toLowerCase() === sectionName) {
+        return true;
+      }
     }
-    switch (sectionName.toLowerCase()) {
-      case "secure":
-        header.secure = true;
-        break;
-      case "httponly":
-        header.httpOnly = true;
-        break;
+    return false;
+  };
+  const findValue = (sectionName: string): string | undefined => {
+    for (const section of sections) {
+      if ((section[0] || "").toLowerCase() === sectionName) {
+        return section.length >= 2 ? section[1] : "";
+      }
     }
-    if (!sectionValue) {
-      continue;
+    return undefined;
+  };
+  const optionally = <A, B>(
+    f: (value: A) => B,
+    value: A | undefined,
+  ): B | undefined => {
+    if (value == null) {
+      return undefined;
+    } else {
+      return f(value);
     }
-    switch (sectionName.toLowerCase()) {
-      case "expires":
-        header.expires = new Date(sectionValue);
-        break;
-      case "max-age":
-        header.maxAge = parseInt(sectionValue);
-        break;
-      case "domain":
-        header.domain = sectionValue;
-        break;
-      case "path":
-        header.path = sectionValue;
-        break;
-      case "samesite":
-        header.sameSite = sectionValue.toLowerCase();
-        break;
-    }
-  }
-  return header;
+  };
+
+  return {
+    name() {
+      return name;
+    },
+    value() {
+      return value[0] === '"' && value[value.length - 1] === '"'
+        ? value.substring(1, value.length - 1)
+        : value;
+    },
+    expires() {
+      return optionally((s) => new Date(s), findValue("expires"));
+    },
+    maxAge() {
+      return optionally(parseInt, findValue("max-age"));
+    },
+    domain() {
+      return findValue("domain");
+    },
+    path() {
+      return findValue("path");
+    },
+    secure() {
+      return findBooleanValue("secure");
+    },
+    httpOnly() {
+      return findBooleanValue("httponly");
+    },
+    sameSite() {
+      return findValue("samesite")?.toLowerCase();
+    },
+  };
 };
