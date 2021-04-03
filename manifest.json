@@ -1,14 +1,19 @@
 {
   "manifest_version": 2,
-  "name": "Memory Loss",
-  "version": "1.0",
 
+  "name": "Memory Loss",
+  "version": "0.1",
   "description": "Persuades your browser to forget information after a while.",
 
-  "content_scripts": [
-    {
-      "matches": ["*://*.mozilla.org/*"],
-      "js": ["borderify.js"]
+  "permissions": ["*://*/*", "cookies", "webRequest", "webRequestBlocking"],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "memory-loss@noodlesandwcih.com"
     }
-  ]
+  },
+
+  "background": {
+    "scripts": ["src/main.js"]
+  }
 }
