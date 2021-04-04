@@ -1,5 +1,7 @@
 import test from "ava";
+import fc from "fast-check";
 
+import * as arbitrary from "./arbitrary.js";
 import {SetCookieHeader} from "../src/cookie_header.js";
 
 test("parse a simple header", (t) => {
@@ -46,7 +48,7 @@ test("render a simple header", (t) => {
   const header = "name=some value";
   const parsedHeader = SetCookieHeader.parse(header);
   if (!parsedHeader) {
-    t.fail("Header was undefined.");
+    t.fail("Parsed header was undefined.");
     return;
   }
   const renderedHeader = parsedHeader.render();
@@ -58,9 +60,23 @@ test("render a complex header in the same order it's parsed", (t) => {
     "name=value; Expires=Sat, 3 Apr 2021 12:34:56 CEST; Max-Age=604800; Domain=www.example.com; Path=/dir; HttpOnly; SameSite=Strict";
   const parsedHeader = SetCookieHeader.parse(header);
   if (!parsedHeader) {
-    t.fail("Header was undefined.");
+    t.fail("Parsed header was undefined.");
     return;
   }
   const renderedHeader = parsedHeader.render();
   t.is(renderedHeader, header);
+});
+
+test("parse and re-render any header", (t) => {
+  fc.assert(
+    fc.property(arbitrary.setCookieHeader, (header) => {
+      const parsedHeader = SetCookieHeader.parse(header);
+      if (!parsedHeader) {
+        return false;
+      }
+      const renderedHeader = parsedHeader.render();
+      return renderedHeader == header;
+    }),
+  );
+  t.pass();
 });

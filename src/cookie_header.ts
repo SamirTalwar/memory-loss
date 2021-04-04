@@ -12,6 +12,15 @@ interface SetCookieHeader {
   render(): string;
 }
 
+const splitPair = (pair: string): [string, string | undefined] => {
+  const offset = pair.indexOf("=");
+  if (offset < 0) {
+    return [pair, undefined];
+  } else {
+    return [pair.substring(0, offset), pair.substring(offset + 1)];
+  }
+};
+
 export const SetCookieHeader = {
   parse: (headerString: string): SetCookieHeader | undefined => {
     const [firstPair, ...pairs] = headerString.split(/;\s*/);
@@ -19,15 +28,15 @@ export const SetCookieHeader = {
       return;
     }
 
-    const [name, value] = firstPair.split("=", 2);
-    if (!name || !value) {
+    const [name, value] = splitPair(firstPair);
+    if (!value) {
       return;
     }
 
-    const sections = pairs.map((pair) => pair.split("=", 2));
+    const sections = pairs.map(splitPair);
     const findBooleanValue = (sectionName: string): boolean => {
       for (const section of sections) {
-        if ((section[0] || "").toLowerCase() === sectionName) {
+        if (section[0].toLowerCase() === sectionName) {
           return true;
         }
       }
