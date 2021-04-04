@@ -44,6 +44,34 @@ test("parse a complex header", (t) => {
   t.is(parsedHeader.sameSite(), "strict");
 });
 
+test("parse a header with an invalid Max-Age", (t) => {
+  const header = "name=value; Max-Age=seven";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  t.is(parsedHeader.name(), "name");
+  t.is(parsedHeader.value(), "value");
+  t.is(parsedHeader.maxAge(), NaN);
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
+test("parse a header with an invalid Expires", (t) => {
+  const header = "name=value; Expires=something";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  t.is(parsedHeader.name(), "name");
+  t.is(parsedHeader.value(), "value");
+  t.deepEqual(parsedHeader.expires(), new Date("invalid"));
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
 test("render a simple header", (t) => {
   const header = "name=some value";
   const parsedHeader = SetCookieHeader.parse(header);
