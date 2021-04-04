@@ -26,7 +26,7 @@ export const setCookieHeader: fc.Arbitrary<string> = (() => {
     fc.constant("Lax"),
     fc.constant("None"),
   );
-  const sections = fc
+  const attributes = fc
     .record({
       expires,
       maxAge,
@@ -37,7 +37,7 @@ export const setCookieHeader: fc.Arbitrary<string> = (() => {
       sameSite,
     })
     .chain((cookie) => {
-      const sectionsWithValues = [
+      const attributesWithValues = [
         ["Expires", cookie.expires],
         ["Max-Age", cookie.maxAge],
         ["Domain", cookie.domain],
@@ -46,17 +46,19 @@ export const setCookieHeader: fc.Arbitrary<string> = (() => {
       ]
         .filter(([, value]) => value)
         .map(([name, value]) => `${name}=${value}`);
-      const sectionsWithoutValues = ([
+      const attributesWithoutValues = ([
         ["Secure", cookie.secure],
         ["HttpOnly", cookie.httpOnly],
       ] as [string, boolean][])
         .filter(([, value]) => value)
         .map(([name]) => name);
       return fc.shuffledSubarray(
-        sectionsWithValues.concat(sectionsWithoutValues),
+        attributesWithValues.concat(attributesWithoutValues),
       );
     });
-  return fc.record({name, value, sections}).map(({name, value, sections}) => {
-    return [`${name}=${value}`, ...sections].join("; ");
-  });
+  return fc
+    .record({name, value, attributes})
+    .map(({name, value, attributes}) => {
+      return [`${name}=${value}`, ...attributes].join("; ");
+    });
 })();

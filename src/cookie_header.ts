@@ -12,6 +12,17 @@ interface SetCookieHeader {
   render(): string;
 }
 
+const optionally = <A, B>(
+  f: (value: A) => B,
+  value: A | undefined,
+): B | undefined => {
+  if (value == null) {
+    return undefined;
+  } else {
+    return f(value);
+  }
+};
+
 const splitPair = (pair: string): [string, string | undefined] => {
   const offset = pair.indexOf("=");
   if (offset < 0) {
@@ -28,38 +39,28 @@ export const SetCookieHeader = {
       return;
     }
 
-    const [name, value] = splitPair(firstPair);
-    if (!value) {
-      return;
-    }
-
-    const sections = pairs.map(splitPair);
-    const findBooleanValue = (sectionName: string): boolean => {
-      for (const section of sections) {
-        if (section[0].toLowerCase() === sectionName) {
+    const attributes = pairs.map(splitPair);
+    const findBooleanValue = (attributeName: string): boolean => {
+      for (const [name] of attributes) {
+        if (name.toLowerCase() === attributeName) {
           return true;
         }
       }
       return false;
     };
-    const findValue = (sectionName: string): string | undefined => {
-      for (const section of sections) {
-        if ((section[0] || "").toLowerCase() === sectionName) {
-          return section.length >= 2 ? section[1] : "";
+    const findValue = (attributeName: string): string | undefined => {
+      for (const [name, value] of attributes) {
+        if (name.toLowerCase() === attributeName) {
+          return value || "";
         }
       }
       return undefined;
     };
-    const optionally = <A, B>(
-      f: (value: A) => B,
-      value: A | undefined,
-    ): B | undefined => {
-      if (value == null) {
-        return undefined;
-      } else {
-        return f(value);
-      }
-    };
+
+    const [name, value] = splitPair(firstPair);
+    if (!value) {
+      return;
+    }
 
     const self = {
       name() {
