@@ -9,6 +9,8 @@ interface SetCookieHeader {
   httpOnly(): boolean;
   sameSite(): string | undefined;
 
+  updateMaxAge(maxAge: number): SetCookieHeader;
+
   render(): string;
 }
 
@@ -69,6 +71,27 @@ const fromAttributes = (
     return undefined;
   };
 
+  const updateAttribute = (attributeName: string, attributeValue: string) => (
+    attributes: Attributes,
+  ): Attributes => {
+    const index = attributes.findIndex(
+      ([name]) => name.toLowerCase() === attributeName.toLowerCase(),
+    );
+    if (index < 0) {
+      return attributes.concat([[attributeName, attributeValue]]);
+    } else {
+      return attributes
+        .slice(0, index)
+        .concat([[attributeName, attributeValue]], attributes.slice(index + 1));
+    }
+  };
+  const removeAttribute = (attributeName: string) => (
+    attributes: Attributes,
+  ): Attributes =>
+    attributes.filter(
+      ([name]) => name.toLowerCase() !== attributeName.toLowerCase(),
+    );
+
   return {
     name() {
       return name;
@@ -98,6 +121,14 @@ const fromAttributes = (
     },
     sameSite() {
       return findValue("SameSite")?.toLowerCase();
+    },
+
+    updateMaxAge(maxAge: number) {
+      const newAttributes = updateAttribute(
+        "Max-Age",
+        maxAge.toString(),
+      )(removeAttribute("Expires")(attributes));
+      return fromAttributes(name, value, newAttributes);
     },
 
     render() {

@@ -108,3 +108,43 @@ test("parse and re-render any header", (t) => {
   );
   t.pass();
 });
+
+test("set a Max-Age", (t) => {
+  const header = "name=some value";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  const updatedHeader = parsedHeader.updateMaxAge(60);
+  const renderedHeader = updatedHeader.render();
+  t.is(updatedHeader.maxAge(), 60);
+  t.is(renderedHeader, "name=some value; Max-Age=60");
+});
+
+test("overwrite a Max-Age", (t) => {
+  const header = "name=some value; Max-Age=60";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  const updatedHeader = parsedHeader.updateMaxAge(120);
+  const renderedHeader = updatedHeader.render();
+  t.is(updatedHeader.maxAge(), 120);
+  t.is(renderedHeader, "name=some value; Max-Age=120");
+});
+
+test("overwrite Expires with a Max-Age", (t) => {
+  const header = "name=some value; Expires=Mon, 05 Apr 2021 09:45:00 GMT";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  const updatedHeader = parsedHeader.updateMaxAge(180);
+  const renderedHeader = updatedHeader.render();
+  t.is(updatedHeader.maxAge(), 180);
+  t.is(updatedHeader.expires(), undefined);
+  t.is(renderedHeader, "name=some value; Max-Age=180");
+});
