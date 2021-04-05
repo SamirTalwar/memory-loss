@@ -54,29 +54,28 @@ const fromAttributes = (
   value: string,
   attributes: Attributes,
 ): SetCookieHeader => {
-  const findBooleanValue = (attributeName: string): boolean => {
-    for (const [name] of attributes) {
-      if (name.toLowerCase() === attributeName.toLowerCase()) {
-        return true;
-      }
-    }
-    return false;
+  const isAttributeName = (
+    expectedName: string,
+  ): ((attribute: Attribute) => boolean) => {
+    const expectedLowerCaseName = expectedName.toLowerCase();
+    return (attribute) => expectedLowerCaseName == attribute[0].toLowerCase();
   };
-  const findValue = (attributeName: string): string | undefined => {
-    for (const [name, value] of attributes) {
-      if (name.toLowerCase() === attributeName.toLowerCase()) {
-        return value || "";
-      }
-    }
-    return undefined;
+  const isNotAttributeName = (
+    expectedName: string,
+  ): ((attribute: Attribute) => boolean) => {
+    const isExpected = isAttributeName(expectedName);
+    return (attribute) => !isExpected(attribute);
   };
-
+  const attributeIsSet = (attributeName: string): boolean =>
+    !!attributes.find(isAttributeName(attributeName));
+  const findAttributeValue = (attributeName: string): string | undefined => {
+    const attribute = attributes.find(isAttributeName(attributeName));
+    return optionally(([, value]) => value || "", attribute);
+  };
   const updateAttribute = (attributeName: string, attributeValue: string) => (
     attributes: Attributes,
   ): Attributes => {
-    const index = attributes.findIndex(
-      ([name]) => name.toLowerCase() === attributeName.toLowerCase(),
-    );
+    const index = attributes.findIndex(isAttributeName(attributeName));
     if (index < 0) {
       return attributes.concat([[attributeName, attributeValue]]);
     } else {
@@ -87,10 +86,7 @@ const fromAttributes = (
   };
   const removeAttribute = (attributeName: string) => (
     attributes: Attributes,
-  ): Attributes =>
-    attributes.filter(
-      ([name]) => name.toLowerCase() !== attributeName.toLowerCase(),
-    );
+  ): Attributes => attributes.filter(isNotAttributeName(attributeName));
 
   return {
     name() {
@@ -102,25 +98,25 @@ const fromAttributes = (
         : value;
     },
     expires() {
-      return optionally((s) => new Date(s), findValue("Expires"));
+      return optionally((s) => new Date(s), findAttributeValue("Expires"));
     },
     maxAge() {
-      return optionally(parseInt, findValue("Max-Age"));
+      return optionally(parseInt, findAttributeValue("Max-Age"));
     },
     domain() {
-      return findValue("Domain");
+      return findAttributeValue("Domain");
     },
     path() {
-      return findValue("Path");
+      return findAttributeValue("Path");
     },
     secure() {
-      return findBooleanValue("Secure");
+      return attributeIsSet("Secure");
     },
     httpOnly() {
-      return findBooleanValue("HttpOnly");
+      return attributeIsSet("HttpOnly");
     },
     sameSite() {
-      return findValue("SameSite")?.toLowerCase();
+      return findAttributeValue("SameSite")?.toLowerCase();
     },
 
     updateMaxAge(maxAge: number) {
