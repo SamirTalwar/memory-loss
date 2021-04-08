@@ -67,7 +67,55 @@ test("parse a header with an invalid Expires", (t) => {
   }
   t.is(parsedHeader.name(), "name");
   t.is(parsedHeader.value(), "value");
-  t.deepEqual(parsedHeader.expires(), new Date("invalid"));
+  t.is(parsedHeader.expires(), undefined);
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
+test("parse a header with an ISO-8601 timestamp in the Expires attribute", (t) => {
+  const header = "name=value; Expires=2023-04-05T12:48:00.000Z";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  t.deepEqual(parsedHeader.expires(), new Date("2023-04-05T12:48:00Z"));
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
+test("parse a header with hyphens in the Expires attribute", (t) => {
+  const header = "name=value; Expires=Fri, 01-Jan-2038 00:00:00 GMT";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  t.deepEqual(parsedHeader.expires(), new Date("2038-01-01T00:00:00Z"));
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
+test("parse an Expires attribute in the past", (t) => {
+  const header = "name=value; Expires=Thu, 01-Jan-1970 00:00:00 GMT";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  t.deepEqual(parsedHeader.expires(), new Date(0));
+  const renderedHeader = parsedHeader.render();
+  t.is(renderedHeader, header);
+});
+
+test("parse a Max-Age attribute in the past", (t) => {
+  const header = "name=value; Max-Age=-60";
+  const parsedHeader = SetCookieHeader.parse(header);
+  if (!parsedHeader) {
+    t.fail("Parsed header was undefined.");
+    return;
+  }
+  t.deepEqual(parsedHeader.maxAge(), -60);
   const renderedHeader = parsedHeader.render();
   t.is(renderedHeader, header);
 });
