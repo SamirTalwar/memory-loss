@@ -1,4 +1,4 @@
-interface SetCookieHeader {
+export interface SetCookieHeader {
   name(): string;
   value(): string;
   expires(): Date | undefined;
