@@ -14,7 +14,7 @@ declare const browser: Browser;
         if (header.value) {
           const parsedHeader = SetCookieHeader.parse(header.value);
           if (parsedHeader) {
-            return [parsedHeader];
+            return [{string: header.value, header: parsedHeader}];
           } else {
             return [];
           }
@@ -22,11 +22,12 @@ declare const browser: Browser;
           return [];
         }
       })
-      .map((header) => ({
+      .map(({string, header}) => ({
         name: header.name(),
         value: header.value(),
         expires: header.expires(),
         maxAge: header.maxAge(),
+        string,
       }));
     if (cookieHeaders.length > 0) {
       console.log({url, cookieHeaders});
