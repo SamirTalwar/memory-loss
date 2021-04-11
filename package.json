@@ -39,11 +39,13 @@
   "webExt": {
     "verbose": true,
     "ignoreFiles": [
+      "nix",
       "src",
       "out",
+      "test",
       "package-lock.json",
       "shell.nix",
-      "snowpack.config.js",
+      "snowpack.config.json",
       "start.sh"
     ]
   }
