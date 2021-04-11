@@ -1,42 +1,72 @@
 import {Browser, WebRequest} from "webextension-polyfill-ts";
+import {SetCookieHeader} from "./cookie_header";
 
 declare const browser: Browser;
 
+const MAXIMUM_COOKIE_EXPIRY_IN_SECONDS = 7 * 24 * 60 * 60;
+
 (async () => {
   const {SetCookieHeader} = await import("./cookie_header");
-  const logCookieHeaders = (
+
+  const limitCookieHeader = (
+    now: number,
+    header: SetCookieHeader,
+  ): SetCookieHeader | undefined => {
+    const maxAge = header.maxAge();
+    const expires = header.expires();
+    const oldMaxAge =
+      maxAge != null
+        ? maxAge
+        : expires != null
+        ? expires.getTime() - now
+        : undefined;
+    if (oldMaxAge != null && oldMaxAge > MAXIMUM_COOKIE_EXPIRY_IN_SECONDS) {
+      const newMaxAge =
+        oldMaxAge != null && oldMaxAge > MAXIMUM_COOKIE_EXPIRY_IN_SECONDS
+          ? MAXIMUM_COOKIE_EXPIRY_IN_SECONDS
+          : oldMaxAge;
+      return header.updateMaxAge(newMaxAge);
+    } else {
+      return;
+    }
+  };
+
+  const limitCookieHeaders = (
     details: WebRequest.OnHeadersReceivedDetailsType,
   ) => {
+    const now = Date.now();
     const {url, responseHeaders} = details;
-    const cookieHeaders = (responseHeaders || [])
-      .filter((header) => header.name.toLowerCase() == "set-cookie")
-      .flatMap((header) => {
-        if (header.value) {
+    const modifiedHeaders = (responseHeaders || []).map(
+      (
+        header: WebRequest.HttpHeadersItemType,
+      ): WebRequest.HttpHeadersItemType => {
+        if (header.name.toLowerCase() == "set-cookie" && header.value) {
           const parsedHeader = SetCookieHeader.parse(header.value);
-          if (parsedHeader) {
-            return [{string: header.value, header: parsedHeader}];
+          if (!parsedHeader) {
+            console.warn("Could not parse a Set-Cookie header.", {header});
+            return header;
+          }
+
+          const newHeaderValue = limitCookieHeader(now, parsedHeader);
+          if (newHeaderValue != null) {
+            console.info("Limited a cookie expiry.", {
+              url,
+              name: parsedHeader.name(),
+            });
+            return {...header, value: newHeaderValue.render()};
           } else {
-            return [];
+            return header;
           }
         } else {
-          return [];
+          return header;
         }
-      })
-      .map(({string, header}) => ({
-        name: header.name(),
-        value: header.value(),
-        expires: header.expires(),
-        maxAge: header.maxAge(),
-        string,
-      }));
-    if (cookieHeaders.length > 0) {
-      console.log({url, cookieHeaders});
-    }
-    return {};
+      },
+    );
+    return {responseHeaders: modifiedHeaders};
   };
 
   browser.webRequest.onHeadersReceived.addListener(
-    logCookieHeaders,
+    limitCookieHeaders,
     {urls: ["<all_urls>"]},
     ["blocking", "responseHeaders"],
   );
