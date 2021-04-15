@@ -14,13 +14,16 @@
   "scripts": {
     "build": "snowpack build",
     "lint": "tsc --noEmit && web-ext lint",
-    "start": "./start.sh"
+    "start": "./start.sh",
+    "test": "make test"
   },
   "devDependencies": {
+    "@khanacademy/flow-to-ts": "^0.5.1",
     "@types/jest": "^26.0.22",
     "@types/selenium-webdriver": "^4.0.12",
     "fast-check": "^2.14.0",
     "jest": "^26.6.3",
+    "prettier": "^2.2.1",
     "selenium-webdriver": "^4.0.0-beta.2",
     "snowpack": "^3.2.2",
     "ts-jest": "^26.5.4",
