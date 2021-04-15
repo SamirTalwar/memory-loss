@@ -1,5 +1,6 @@
 # Direnv
 .direnv
+.envrc.local
 
 # node.js
 node_modules
