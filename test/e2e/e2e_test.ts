@@ -1,14 +1,8 @@
 import * as http from "http";
-import * as util from "util";
-import {Builder, By, WebDriver} from "selenium-webdriver";
-import * as firefox from "selenium-webdriver/firefox";
-import {getPrefs} from "./vendor/web-ext/src/firefox/preferences";
-import {
-  connectWithMaxRetries as connectToFirefox,
-  findFreeTcpPort,
-} from "./vendor/web-ext/src/firefox/remote";
+import {By, WebDriver} from "selenium-webdriver";
 
-import newCookieServer from "./cookie-server/server";
+import * as cookieServerManagement from "./cookie_server";
+import * as firefoxManagement from "./firefox";
 
 const ONE_MINUTE = 60;
 const ONE_HOUR = ONE_MINUTE * 60;
@@ -16,63 +10,22 @@ const ONE_DAY = ONE_HOUR * 24;
 const ONE_WEEK = ONE_DAY * 7;
 const TWO_WEEKS = ONE_WEEK * 2;
 
-const root = __dirname + "/../";
-
 let cookieServerUrl: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
 
-const startCookieServer = async (): Promise<[string, http.Server]> => {
-  const server = newCookieServer();
-  const port = await findFreeTcpPort();
-  await util.promisify(server.listen.bind(server, port))();
-  const url = `http://localhost:${port}`;
-  return [url, server];
-};
-
-const stopCookieServer = async (): Promise<void> => {
-  if (cookieServer) {
-    await util.promisify(cookieServer.close.bind(cookieServer))();
-  }
-};
-
-const startFirefox = async (): Promise<WebDriver> => {
-  const debugPort = await findFreeTcpPort();
-  const options = new firefox.Options();
-  options.addArguments("--start-debugger-server", debugPort.toString());
-  options.headless();
-  for (const [key, value] of Object.entries(getPrefs("firefox"))) {
-    options.setPreference(key, value);
-  }
-  const driver = await new Builder()
-    .forBrowser("firefox")
-    .setFirefoxOptions(options)
-    .build();
-  try {
-    const client = await connectToFirefox({port: debugPort});
-    await client.installTemporaryAddon(root);
-    return driver;
-  } catch (error) {
-    await driver.close();
-    return Promise.reject(error);
-  }
-};
-
-const stopFirefox = async (): Promise<void> => {
-  if (driver) {
-    await driver.close();
-  }
-};
-
 beforeEach(async () => {
   [[cookieServerUrl, cookieServer], driver] = await Promise.all([
-    startCookieServer(),
-    startFirefox(),
+    cookieServerManagement.start(),
+    firefoxManagement.start(),
   ]);
 });
 
 afterEach(async () => {
-  await Promise.all([stopFirefox(), stopCookieServer()]);
+  await Promise.all([
+    firefoxManagement.stop(driver),
+    cookieServerManagement.stop(cookieServer),
+  ]);
 });
 
 const submitNewCookie = async (
