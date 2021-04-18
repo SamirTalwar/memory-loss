@@ -7,7 +7,9 @@ A browser extension that persuades your browser to forget information after a wh
 - [x] Limit cookies to a week.
 - [ ] Make the maximum cookie expiry time customizable.
 - [ ] Prompt the user to configure the extension on installation.
-- [ ] Overwrite old cookie expiry time on installation and startup.
+- [ ] Provide a button to overwrite cookie expiry times for pre-existing cookies.
+- [ ] Optionally overwrite cookie expiry times for pre-existing cookies on startup.
+- [ ] Optionally wipe session cookies on startup.
 - [ ] Customize the maximum cookie expiry time per domain.
 - [ ] Test on Google Chrome.
 - [ ] Test with first-party isolation.
