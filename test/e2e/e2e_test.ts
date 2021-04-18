@@ -14,18 +14,23 @@ let cookieServerUrl: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
 
-beforeEach(async () => {
+beforeAll(async () => {
   [[cookieServerUrl, cookieServer], driver] = await Promise.all([
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
 });
 
-afterEach(async () => {
+afterAll(async () => {
   await Promise.all([
     firefoxManagement.stop(driver),
     cookieServerManagement.stop(cookieServer),
   ]);
+});
+
+beforeEach(async () => {
+  await driver.navigate().to(cookieServerUrl);
+  await driver.manage().deleteAllCookies();
 });
 
 const submitNewCookie = async (
