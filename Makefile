@@ -1,6 +1,18 @@
+.PHONY: build
+build:
+	snowpack build
+	touch $@
+
 .PHONY: test
-test: test/vendor
-	jest --testTimeout=15000
+test: test/unit test/e2e
+
+.PHONY: test/e2e
+test/e2e: build test/vendor
+	jest test/e2e
+
+.PHONY: test/unit
+test/unit: build
+	jest test/unit
 
 test/vendor: test/vendor/web-ext/src/firefox/preferences.ts test/vendor/web-ext/src/firefox/remote.ts
 	touch $@

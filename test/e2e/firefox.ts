@@ -1,3 +1,4 @@
+import * as path from "path";
 import {Builder, WebDriver} from "selenium-webdriver";
 import * as firefox from "selenium-webdriver/firefox";
 import {getPrefs} from "../vendor/web-ext/src/firefox/preferences";
@@ -6,7 +7,7 @@ import {
   findFreeTcpPort,
 } from "../vendor/web-ext/src/firefox/remote";
 
-const root = __dirname + "/../../";
+const root = path.resolve(__dirname, "..", "..");
 
 export const start = async (): Promise<WebDriver> => {
   const debugPort = await findFreeTcpPort();

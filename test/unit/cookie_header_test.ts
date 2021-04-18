@@ -1,7 +1,7 @@
 import fc from "fast-check";
 
 import * as arbitrary from "./arbitrary";
-import {SetCookieHeader} from "../src/cookie_header";
+import {SetCookieHeader} from "../../src/cookie_header";
 
 const parseOrFail = (header: string): SetCookieHeader => {
   const parsedHeader = SetCookieHeader.parse(header);

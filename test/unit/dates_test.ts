@@ -1,4 +1,4 @@
-import {parseDate} from "../src/dates";
+import {parseDate} from "../../src/dates";
 
 test("parses an ISO-8601 date", () => {
   const dateString = "1994-11-06T08:49:37Z";
