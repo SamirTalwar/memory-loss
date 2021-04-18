@@ -40,9 +40,8 @@ const startFirefox = async (): Promise<WebDriver> => {
   const debugPort = await findFreeTcpPort();
   const options = new firefox.Options();
   options.addArguments("--start-debugger-server", debugPort.toString());
-  for (const [key, value] of Object.entries(
-    getPrefs("firefox") as {[key: string]: string | number | boolean},
-  )) {
+  options.headless();
+  for (const [key, value] of Object.entries(getPrefs("firefox"))) {
     options.setPreference(key, value);
   }
   const driver = await new Builder()
