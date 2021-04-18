@@ -11,7 +11,7 @@ const parseOrFail = (header: string): SetCookieHeader => {
   return parsedHeader;
 };
 
-test("parse a simple header", () => {
+test.concurrent("parse a simple header", async () => {
   const header = "name=value";
   const parsedHeader = parseOrFail(header);
   expect(parsedHeader.name()).toBe("name");
@@ -25,7 +25,7 @@ test("parse a simple header", () => {
   expect(parsedHeader.sameSite()).toBe(undefined);
 });
 
-test("parse a complex header", () => {
+test.concurrent("parse a complex header", async () => {
   const header =
     'name="this is a long value!"; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Max-Age=2592000; Domain=example.com; Path=/dir; Secure; HttpOnly; SameSite=Strict';
   const parsedHeader = parseOrFail(header);
@@ -42,7 +42,7 @@ test("parse a complex header", () => {
   expect(parsedHeader.sameSite()).toBe("strict");
 });
 
-test("parse a header with an invalid Max-Age", () => {
+test.concurrent("parse a header with an invalid Max-Age", async () => {
   const header = "name=value; Max-Age=seven";
   const parsedHeader = parseOrFail(header);
   expect(parsedHeader.name()).toBe("name");
@@ -52,7 +52,7 @@ test("parse a header with an invalid Max-Age", () => {
   expect(renderedHeader).toBe(header);
 });
 
-test("parse a header with an invalid Expires", () => {
+test.concurrent("parse a header with an invalid Expires", async () => {
   const header = "name=value; Expires=something";
   const parsedHeader = parseOrFail(header);
   expect(parsedHeader.name()).toBe("name");
@@ -62,27 +62,33 @@ test("parse a header with an invalid Expires", () => {
   expect(renderedHeader).toBe(header);
 });
 
-test("parse a header with an ISO-8601 timestamp in the Expires attribute", () => {
-  const header = "name=value; Expires=2023-04-05T12:48:00.000Z";
-  const parsedHeader = parseOrFail(header);
-  expect(parsedHeader.expires()).toStrictEqual(
-    new Date("2023-04-05T12:48:00Z"),
-  );
-  const renderedHeader = parsedHeader.render();
-  expect(renderedHeader).toBe(header);
-});
+test.concurrent(
+  "parse a header with an ISO-8601 timestamp in the Expires attribute",
+  async () => {
+    const header = "name=value; Expires=2023-04-05T12:48:00.000Z";
+    const parsedHeader = parseOrFail(header);
+    expect(parsedHeader.expires()).toStrictEqual(
+      new Date("2023-04-05T12:48:00Z"),
+    );
+    const renderedHeader = parsedHeader.render();
+    expect(renderedHeader).toBe(header);
+  },
+);
 
-test("parse a header with hyphens in the Expires attribute", () => {
-  const header = "name=value; Expires=Fri, 01-Jan-2038 00:00:00 GMT";
-  const parsedHeader = parseOrFail(header);
-  expect(parsedHeader.expires()).toStrictEqual(
-    new Date("2038-01-01T00:00:00Z"),
-  );
-  const renderedHeader = parsedHeader.render();
-  expect(renderedHeader).toBe(header);
-});
+test.concurrent(
+  "parse a header with hyphens in the Expires attribute",
+  async () => {
+    const header = "name=value; Expires=Fri, 01-Jan-2038 00:00:00 GMT";
+    const parsedHeader = parseOrFail(header);
+    expect(parsedHeader.expires()).toStrictEqual(
+      new Date("2038-01-01T00:00:00Z"),
+    );
+    const renderedHeader = parsedHeader.render();
+    expect(renderedHeader).toBe(header);
+  },
+);
 
-test("parse an Expires attribute in the past", () => {
+test.concurrent("parse an Expires attribute in the past", async () => {
   const header = "name=value; Expires=Thu, 01-Jan-1970 00:00:00 GMT";
   const parsedHeader = parseOrFail(header);
   expect(parsedHeader.expires()).toStrictEqual(new Date(0));
@@ -90,7 +96,7 @@ test("parse an Expires attribute in the past", () => {
   expect(renderedHeader).toBe(header);
 });
 
-test("parse a Max-Age attribute in the past", () => {
+test.concurrent("parse a Max-Age attribute in the past", async () => {
   const header = "name=value; Max-Age=-60";
   const parsedHeader = parseOrFail(header);
   expect(parsedHeader.maxAge()).toBe(-60);
@@ -98,22 +104,25 @@ test("parse a Max-Age attribute in the past", () => {
   expect(renderedHeader).toBe(header);
 });
 
-test("render a simple header", () => {
+test.concurrent("render a simple header", async () => {
   const header = "name=some value";
   const parsedHeader = parseOrFail(header);
   const renderedHeader = parsedHeader.render();
   expect(renderedHeader).toBe(header);
 });
 
-test("render a complex header in the same order it's parsed", () => {
-  const header =
-    "name=value; Expires=Sat, 3 Apr 2021 12:34:56 CEST; Max-Age=604800; Domain=www.example.com; Path=/dir; HttpOnly; SameSite=Strict";
-  const parsedHeader = parseOrFail(header);
-  const renderedHeader = parsedHeader.render();
-  expect(renderedHeader).toBe(header);
-});
+test.concurrent(
+  "render a complex header in the same order it's parsed",
+  async () => {
+    const header =
+      "name=value; Expires=Sat, 3 Apr 2021 12:34:56 CEST; Max-Age=604800; Domain=www.example.com; Path=/dir; HttpOnly; SameSite=Strict";
+    const parsedHeader = parseOrFail(header);
+    const renderedHeader = parsedHeader.render();
+    expect(renderedHeader).toBe(header);
+  },
+);
 
-test("parse and re-render any header", () => {
+test.concurrent("parse and re-render any header", async () => {
   fc.assert(
     fc.property(arbitrary.setCookieHeader, (header) => {
       const parsedHeader = SetCookieHeader.parse(header);
@@ -126,7 +135,7 @@ test("parse and re-render any header", () => {
   );
 });
 
-test("set a Max-Age", () => {
+test.concurrent("set a Max-Age", async () => {
   const header = "name=some value";
   const parsedHeader = parseOrFail(header);
   const updatedHeader = parsedHeader.updateMaxAge(60);
@@ -135,7 +144,7 @@ test("set a Max-Age", () => {
   expect(renderedHeader).toBe("name=some value; Max-Age=60");
 });
 
-test("overwrite a Max-Age", () => {
+test.concurrent("overwrite a Max-Age", async () => {
   const header = "name=some value; Max-Age=60";
   const parsedHeader = parseOrFail(header);
   const updatedHeader = parsedHeader.updateMaxAge(120);
@@ -144,7 +153,7 @@ test("overwrite a Max-Age", () => {
   expect(renderedHeader).toBe("name=some value; Max-Age=120");
 });
 
-test("overwrite Expires with a Max-Age", () => {
+test.concurrent("overwrite Expires with a Max-Age", async () => {
   const header = "name=some value; Expires=Mon, 05 Apr 2021 09:45:00 GMT";
   const parsedHeader = parseOrFail(header);
   const updatedHeader = parsedHeader.updateMaxAge(180);
