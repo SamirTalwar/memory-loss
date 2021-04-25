@@ -16,5 +16,5 @@ sleep 1
 web-ext run \
   --verbose \
   --source-dir=build/development \
-  --watch-file=build/development/main.js \
+  --watch-file=build/development/manifest.json \
   --start-url="$START_URL"
