@@ -1,14 +1,13 @@
-import {Browser, WebRequest} from "webextension-polyfill-ts";
+import {WebRequest} from "webextension-polyfill-ts";
 import {SetCookieHeader} from "./cookie_header";
 
-declare const browser: Browser;
-
-const MAXIMUM_COOKIE_EXPIRY_IN_SECONDS = 7 * 24 * 60 * 60;
-
 (async () => {
+  const {browser} = await import("webextension-polyfill-ts");
   const {SetCookieHeader} = await import("./cookie_header");
+  const options = await import("./options");
 
   const limitCookieHeader = (
+    limitInSeconds: number,
     now: number,
     header: SetCookieHeader,
   ): SetCookieHeader | undefined => {
@@ -20,10 +19,10 @@ const MAXIMUM_COOKIE_EXPIRY_IN_SECONDS = 7 * 24 * 60 * 60;
         : expires != null
         ? expires.getTime() - now
         : undefined;
-    if (oldMaxAge != null && oldMaxAge > MAXIMUM_COOKIE_EXPIRY_IN_SECONDS) {
+    if (oldMaxAge != null && oldMaxAge > limitInSeconds) {
       const newMaxAge =
-        oldMaxAge != null && oldMaxAge > MAXIMUM_COOKIE_EXPIRY_IN_SECONDS
-          ? MAXIMUM_COOKIE_EXPIRY_IN_SECONDS
+        oldMaxAge != null && oldMaxAge > limitInSeconds
+          ? limitInSeconds
           : oldMaxAge;
       return header.updateMaxAge(newMaxAge);
     } else {
@@ -31,9 +30,10 @@ const MAXIMUM_COOKIE_EXPIRY_IN_SECONDS = 7 * 24 * 60 * 60;
     }
   };
 
-  const limitCookieHeaders = (
+  const limitCookieHeaders = async (
     details: WebRequest.OnHeadersReceivedDetailsType,
-  ) => {
+  ): Promise<WebRequest.BlockingResponse> => {
+    const currentOptions = await options.get();
     const now = Date.now();
     const {url, responseHeaders} = details;
     const modifiedHeaders = (responseHeaders || []).map(
@@ -47,7 +47,11 @@ const MAXIMUM_COOKIE_EXPIRY_IN_SECONDS = 7 * 24 * 60 * 60;
             return header;
           }
 
-          const newHeaderValue = limitCookieHeader(now, parsedHeader);
+          const newHeaderValue = limitCookieHeader(
+            currentOptions.cookieLimitInSeconds,
+            now,
+            parsedHeader,
+          );
           if (newHeaderValue != null) {
             console.info("Limited a cookie expiry.", {
               url,

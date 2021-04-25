@@ -5,7 +5,13 @@
   "version": "0.1",
   "description": "Persuades your browser to forget information after a while.",
 
-  "permissions": ["*://*/*", "cookies", "webRequest", "webRequestBlocking"],
+  "permissions": [
+    "*://*/*",
+    "cookies",
+    "storage",
+    "webRequest",
+    "webRequestBlocking"
+  ],
 
   "browser_specific_settings": {
     "gecko": {
@@ -15,5 +21,10 @@
 
   "background": {
     "scripts": ["build/main.js"]
+  },
+  "options_ui": {
+    "page": "build/options.html",
+    "browser_style": true,
+    "chrome_style": true
   }
 }
