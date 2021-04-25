@@ -10,7 +10,7 @@ import {
 const root = path.resolve(__dirname, "..", "..");
 const addonDirectory = path.resolve(root, "build", "test");
 
-export const start = async (): Promise<WebDriver> => {
+export const start = async (): Promise<[WebDriver, string]> => {
   const debugPort = await findFreeTcpPort();
   const options = new firefox.Options();
   options.addArguments("--start-debugger-server", debugPort.toString());
@@ -25,7 +25,13 @@ export const start = async (): Promise<WebDriver> => {
   try {
     const client = await connectToFirefox({port: debugPort});
     await client.installTemporaryAddon(addonDirectory);
-    return driver;
+    await driver.wait(async (d) => {
+      const url = await d.getCurrentUrl();
+      return url.startsWith("moz-extension://");
+    }, 2000);
+    const addonOptionsUrl = await driver.getCurrentUrl();
+    await driver.navigate().to("about:blank");
+    return [driver, addonOptionsUrl];
   } catch (error) {
     await driver.close();
     return Promise.reject(error);

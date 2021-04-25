@@ -9,13 +9,19 @@ const ONE_HOUR = ONE_MINUTE * 60;
 const ONE_DAY = ONE_HOUR * 24;
 const ONE_WEEK = ONE_DAY * 7;
 const TWO_WEEKS = ONE_WEEK * 2;
+const ONE_MONTH = ONE_DAY * 30;
+const ONE_YEAR = ONE_DAY * 365;
 
 let cookieServerUrl: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
+let addonOptionsUrl: string;
 
 beforeAll(async () => {
-  [[cookieServerUrl, cookieServer], driver] = await Promise.all([
+  [
+    [cookieServerUrl, cookieServer],
+    [driver, addonOptionsUrl],
+  ] = await Promise.all([
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
@@ -67,8 +73,8 @@ const readCookies = async (): Promise<Array<{name: string; value: string}>> => {
 };
 
 test("cookies are set as usual", async () => {
-  const now = Date.now() / 1000;
   await driver.navigate().to(cookieServerUrl);
+  const now = Date.now() / 1000;
   await submitNewCookie(
     "some_name",
     `some_name=the cookie value; Max-Age=${ONE_HOUR}; SameSite=Strict`,
@@ -76,10 +82,7 @@ test("cookies are set as usual", async () => {
 
   const serverCookies = await readCookies();
   expect(serverCookies).toStrictEqual([
-    {
-      name: "some_name",
-      value: "the cookie value",
-    },
+    {name: "some_name", value: "the cookie value"},
   ]);
 
   const cookie = await driver.manage().getCookie("some_name");
@@ -89,8 +92,8 @@ test("cookies are set as usual", async () => {
 });
 
 test("long-lived cookies are capped at a week", async () => {
-  const now = Date.now() / 1000;
   await driver.navigate().to(cookieServerUrl);
+  const now = Date.now() / 1000;
   await submitNewCookie(
     "long_lived",
     `long_lived=some random value; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
@@ -98,14 +101,31 @@ test("long-lived cookies are capped at a week", async () => {
 
   const serverCookies = await readCookies();
   expect(serverCookies).toStrictEqual([
-    {
-      name: "long_lived",
-      value: "some random value",
-    },
+    {name: "long_lived", value: "some random value"},
   ]);
 
   const cookie = await driver.manage().getCookie("long_lived");
   expect(cookie.value).toBe("some random value");
   expect(cookie.expiry).toBeGreaterThan(now + ONE_WEEK - 5);
   expect(cookie.expiry).toBeLessThan(now + ONE_WEEK + 5);
+});
+
+test("cookie expiry is configurable", async () => {
+  await driver.navigate().to(addonOptionsUrl);
+  const limit = await driver.findElement(By.name("limit"));
+  await limit.sendKeys("1 month");
+
+  await driver.navigate().to(cookieServerUrl);
+  const now = Date.now() / 1000;
+  await submitNewCookie(
+    "forever",
+    `forever=infinity; Max-Age=${ONE_YEAR}; SameSite=Strict`,
+  );
+
+  const serverCookies = await readCookies();
+  expect(serverCookies).toStrictEqual([{name: "forever", value: "infinity"}]);
+
+  const cookie = await driver.manage().getCookie("forever");
+  expect(cookie.expiry).toBeGreaterThan(now + ONE_MONTH - 5);
+  expect(cookie.expiry).toBeLessThan(now + ONE_MONTH + 5);
 });
