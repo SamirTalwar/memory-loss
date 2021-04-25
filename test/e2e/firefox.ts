@@ -30,7 +30,7 @@ export const start = async (): Promise<[WebDriver, string]> => {
     await driver.wait(async (d) => {
       const url = await d.getCurrentUrl();
       return url.startsWith("moz-extension://");
-    }, 2000);
+    });
     const addonOptionsUrl = await driver.getCurrentUrl();
     await driver.navigate().to("about:blank");
     return [driver, addonOptionsUrl];

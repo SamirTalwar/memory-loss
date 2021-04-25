@@ -27,3 +27,8 @@ export const get = async (): Promise<Options> => ({
 
 export const set = (newOptions: Options): Promise<void> =>
   browser.storage.sync.set(newOptions);
+
+export const neverConfigured = async (): Promise<boolean> => {
+  const options = await browser.storage.sync.get(OPTIONS_STORAGE_KEYS);
+  return Object.keys(options).length === 0;
+};

@@ -5,9 +5,8 @@ import {SetCookieHeader} from "./cookie_header";
   const {browser} = await import("webextension-polyfill-ts");
   const {SetCookieHeader} = await import("./cookie_header");
   const options = await import("./options");
-  const env = await import("./_snowpack/env");
 
-  if (env.SNOWPACK_PUBLIC_OPEN_OPTIONS_ON_STARTUP) {
+  if (await options.neverConfigured()) {
     await browser.runtime.openOptionsPage();
   }
 

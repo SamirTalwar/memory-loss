@@ -16,7 +16,7 @@ build/development:
 
 .PHONY: build/test
 build/test:
-	SNOWPACK_PUBLIC_OPEN_OPTIONS_ON_STARTUP=true snowpack build --out=$@
+	snowpack build --out=$@
 	jq '. * {"options_ui": {"open_in_tab": true}}' manifest.json > $@/manifest.json
 	touch $@
 
