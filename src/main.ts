@@ -25,11 +25,7 @@ import {SetCookieHeader} from "./cookie_header";
         ? expires.getTime() - now
         : undefined;
     if (oldMaxAge != null && oldMaxAge > limitInSeconds) {
-      const newMaxAge =
-        oldMaxAge != null && oldMaxAge > limitInSeconds
-          ? limitInSeconds
-          : oldMaxAge;
-      return header.updateMaxAge(newMaxAge);
+      return header.updateMaxAge(limitInSeconds);
     } else {
       return;
     }
@@ -39,6 +35,10 @@ import {SetCookieHeader} from "./cookie_header";
     details: WebRequest.OnHeadersReceivedDetailsType,
   ): Promise<WebRequest.BlockingResponse> => {
     const currentOptions = await options.get();
+    if (!currentOptions.cookieLimitInSeconds) {
+      return {};
+    }
+
     const now = Date.now();
     const {url, responseHeaders} = details;
     const modifiedHeaders = (responseHeaders || []).map(
@@ -53,7 +53,7 @@ import {SetCookieHeader} from "./cookie_header";
           }
 
           const newHeaderValue = limitCookieHeader(
-            currentOptions.cookieLimitInSeconds,
+            currentOptions.cookieLimitInSeconds!,
             now,
             parsedHeader,
           );

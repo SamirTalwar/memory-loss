@@ -7,8 +7,6 @@ import * as firefoxManagement from "./firefox";
 const ONE_MINUTE = 60;
 const ONE_HOUR = ONE_MINUTE * 60;
 const ONE_DAY = ONE_HOUR * 24;
-const ONE_WEEK = ONE_DAY * 7;
-const TWO_WEEKS = ONE_WEEK * 2;
 const ONE_MONTH = ONE_DAY * 30;
 const ONE_YEAR = ONE_DAY * 365;
 
@@ -25,7 +23,7 @@ beforeAll(async () => {
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
-});
+}, 10000);
 
 afterAll(async () => {
   await Promise.all([
@@ -91,29 +89,11 @@ test("cookies are set as usual", async () => {
   expect(cookie.expiry).toBeLessThan(now + ONE_HOUR + 5);
 });
 
-test("long-lived cookies are capped at a week", async () => {
-  await driver.navigate().to(cookieServerUrl);
-  const now = Date.now() / 1000;
-  await submitNewCookie(
-    "long_lived",
-    `long_lived=some random value; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-  );
-
-  const serverCookies = await readCookies();
-  expect(serverCookies).toStrictEqual([
-    {name: "long_lived", value: "some random value"},
-  ]);
-
-  const cookie = await driver.manage().getCookie("long_lived");
-  expect(cookie.value).toBe("some random value");
-  expect(cookie.expiry).toBeGreaterThan(now + ONE_WEEK - 5);
-  expect(cookie.expiry).toBeLessThan(now + ONE_WEEK + 5);
-});
-
-test("cookie expiry is configurable", async () => {
+test("long-lived cookies are capped to the configuration", async () => {
   await driver.navigate().to(addonOptionsUrl);
   const limit = await driver.findElement(By.name("limit"));
   await limit.sendKeys("1 month");
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   await driver.navigate().to(cookieServerUrl);
   const now = Date.now() / 1000;

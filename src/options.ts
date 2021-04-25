@@ -1,7 +1,7 @@
 import {browser} from "webextension-polyfill-ts";
 
 export interface Options {
-  cookieLimitInSeconds: number;
+  cookieLimitInSeconds: number | undefined;
 }
 
 const DAYS = 24 * 60 * 60;
@@ -9,7 +9,7 @@ const DAYS = 24 * 60 * 60;
 const OPTIONS_STORAGE_KEYS: Array<keyof Options> = ["cookieLimitInSeconds"];
 
 const DEFAULT_OPTIONS: Options = {
-  cookieLimitInSeconds: 7 * DAYS,
+  cookieLimitInSeconds: undefined,
 };
 
 export const COOKIE_LIMIT_OPTIONS = [
