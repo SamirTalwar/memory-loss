@@ -10,6 +10,7 @@
     for (const {description, value} of options.COOKIE_LIMIT_OPTIONS) {
       const optionElement = document.createElement("option");
       optionElement.value = value.toString();
+      optionElement.setAttribute("data-description", description);
       optionElement.textContent = description;
       if (value === currentOptions.cookieLimitInSeconds) {
         selected = true;
@@ -20,6 +21,7 @@
 
     const foreverOptionElement = document.createElement("option");
     foreverOptionElement.value = "";
+    foreverOptionElement.setAttribute("data-description", "forever");
     foreverOptionElement.textContent = "forever";
     if (!selected) {
       foreverOptionElement.selected = true;

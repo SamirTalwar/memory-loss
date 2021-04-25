@@ -91,9 +91,10 @@ test("cookies are set as usual", async () => {
 
 test("long-lived cookies are capped to the configuration", async () => {
   await driver.navigate().to(addonOptionsUrl);
-  const limit = await driver.findElement(By.name("limit"));
-  await limit.sendKeys("1 month");
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const limitOption = await driver.findElement(
+    By.css('#option-limit > option[data-description="1 month"]'),
+  );
+  await limitOption.click();
 
   await driver.navigate().to(cookieServerUrl);
   const now = Date.now() / 1000;
