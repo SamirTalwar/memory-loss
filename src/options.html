@@ -4,8 +4,31 @@
     <meta charset="utf-8" />
     <title>Memory Loss Options</title>
     <script defer src="options_page.js"></script>
+    <style>
+      #error {
+        display: none;
+        border-radius: 5px;
+        padding: 0.5em;
+        background-color: #d02;
+        color: #fff;
+      }
+
+      #error-dismiss {
+        padding: 0.5em;
+        float: right;
+      }
+
+      #violating-cookies {
+        display: none;
+      }
+    </style>
   </head>
   <body>
+    <div id="error">
+      <span id="error-dismiss">×</span>
+      <span id="error-message"></span>
+    </div>
+
     <h2>Welcome</h2>
     <p><em>Memory Loss</em> helps your browser forget things over time.</p>
     <p>Just like we do.</p>
@@ -32,5 +55,12 @@
       <label for="limit">Limit cookie expiry time to:</label>
       <select id="option-limit" name="limit"></select>
     </p>
+
+    <div id="violating-cookies">
+      <p id="violating-cookies-description">
+        There are some cookies that violate the above limit.
+      </p>
+      <p><button id="limit-all-cookies">Limit all cookies</button></p>
+    </div>
   </body>
 </html>
