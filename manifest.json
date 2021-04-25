@@ -20,10 +20,10 @@
   },
 
   "background": {
-    "scripts": ["build/main.js"]
+    "scripts": ["main.js"]
   },
   "options_ui": {
-    "page": "build/options.html",
+    "page": "options.html",
     "browser_style": true,
     "chrome_style": true
   }

@@ -8,6 +8,7 @@ import {
 } from "../vendor/web-ext/src/firefox/remote";
 
 const root = path.resolve(__dirname, "..", "..");
+const addonDirectory = path.resolve(root, "build", "test");
 
 export const start = async (): Promise<WebDriver> => {
   const debugPort = await findFreeTcpPort();
@@ -23,7 +24,7 @@ export const start = async (): Promise<WebDriver> => {
     .build();
   try {
     const client = await connectToFirefox({port: debugPort});
-    await client.installTemporaryAddon(root);
+    await client.installTemporaryAddon(addonDirectory);
     return driver;
   } catch (error) {
     await driver.close();

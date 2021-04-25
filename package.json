@@ -12,8 +12,8 @@
   "type": "module",
   "main": "build/main.js",
   "scripts": {
-    "build": "snowpack build",
-    "lint": "tsc --noEmit && web-ext lint",
+    "build": "make build",
+    "lint": "make lint",
     "start": "./start.sh",
     "test": "make test"
   },

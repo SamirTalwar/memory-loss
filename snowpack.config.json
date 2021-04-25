@@ -5,5 +5,7 @@
   "plugins": [],
   "packageOptions": {},
   "devOptions": {},
-  "buildOptions": {}
+  "buildOptions": {
+    "out": "build/production"
+  }
 }
