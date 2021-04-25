@@ -6,6 +6,24 @@
     <script defer src="options_page.js"></script>
   </head>
   <body>
+    <h2>Limit cookie expiry time</h2>
+    <p><em>Memory Loss</em> can limit the expiry time of cookies.</p>
+    <p>
+      Often, servers will send cookies with instructions to keep them years or
+      decades into the future. This can mean that if you visit a site, then
+      visit again a year later, they can tie those visits together.
+    </p>
+    <p>
+      If you select a limit, all cookies sent by servers with an expiry time
+      greater than the limit will have their expiry time overriden to the limit.
+    </p>
+    <p>
+      For example, if you select a limit of "1 month", and then visit Your
+      Favorite Social Network™, the cookie that keeps you signed in will be
+      forced to expire after 1 month, even if the social network sets the expiry
+      time to years in the future.
+    </p>
+    <p>Choose "forever" to disable this functionality.</p>
     <p>
       <label for="limit">Limit cookie expiry time to:</label>
       <select name="limit"></select>
