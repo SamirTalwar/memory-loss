@@ -95,31 +95,36 @@ const reportError = (error: any): void => {
       try {
         if (currentOptions.cookieLimitInSeconds) {
           const now = (Date.now() / 1000) | 0;
-          const limit = now + currentOptions.cookieLimitInSeconds;
+          const maxExpirationDate = now + currentOptions.cookieLimitInSeconds;
           const cookies = await browser.cookies.getAll({});
           const limitedCookies = cookies
             .filter(
               (cookie) =>
-                cookie.expirationDate != null && cookie.expirationDate > limit,
+                cookie.expirationDate != null &&
+                cookie.expirationDate > maxExpirationDate,
             )
-            .map((cookie) => ({
-              domain: cookie.domain,
-              firstPartyDomain: cookie.firstPartyDomain,
-              httpOnly: cookie.httpOnly,
-              name: cookie.name,
-              path: cookie.path,
-              sameSite: cookie.sameSite,
-              secure: cookie.secure,
-              storeId: cookie.storeId,
-              value: cookie.value,
-              expirationDate: limit,
-              url:
-                (cookie as any).url ||
-                cookie.domain.replace(
-                  /^(\.)?/,
-                  cookie.secure ? "https://" : "http://",
-                ) + cookie.path,
-            }));
+            .map((cookie) => {
+              // We do not include `domain` in the generated cookie because it
+              // breaks localhost and cookies without a `Domain` attribute.
+              // However, we do use it to reconstruct the URL.
+              const domain = cookie.domain.startsWith(".")
+                ? cookie.domain.substring(1)
+                : cookie.domain;
+              const protocol = cookie.secure ? "https://" : "http://";
+              const url = protocol + domain + cookie.path;
+              return {
+                firstPartyDomain: cookie.firstPartyDomain,
+                httpOnly: cookie.httpOnly,
+                name: cookie.name,
+                path: cookie.path,
+                sameSite: cookie.sameSite,
+                secure: cookie.secure,
+                storeId: cookie.storeId,
+                value: cookie.value,
+                url,
+                expirationDate: maxExpirationDate,
+              };
+            });
           await Promise.all(
             limitedCookies.map((cookie) => browser.cookies.set(cookie)),
           );

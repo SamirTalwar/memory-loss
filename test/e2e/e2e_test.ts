@@ -1,7 +1,5 @@
-import * as childProcess from "child_process";
 import * as http from "http";
 import * as net from "net";
-import * as util from "util";
 import {By, WebDriver} from "selenium-webdriver";
 
 import * as cookieServerManagement from "./cookie_server";
@@ -25,16 +23,12 @@ beforeAll(async () => {
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
-  const hostnameProcess = await util.promisify(childProcess.execFile)(
-    "hostname",
-  );
-  const host = hostnameProcess.stdout;
   const cookieServerAddress = cookieServer.address() as net.AddressInfo | null;
   if (cookieServerAddress == null) {
     await cookieServerManagement.stop(cookieServer);
     throw new Error("The cookie server has no address.");
   }
-  cookieServerUrl = `http://${host}:${cookieServerAddress.port}`;
+  cookieServerUrl = `http://localhost:${cookieServerAddress.port}`;
 }, 10000);
 
 afterAll(async () => {
