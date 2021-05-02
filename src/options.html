@@ -8,13 +8,20 @@
       #error {
         display: none;
         border-radius: 5px;
-        padding: 0.5em;
+        padding: 1em;
         background-color: #d02;
         color: #fff;
       }
 
+      #error p {
+        margin: 0;
+      }
+
+      #error-message {
+        white-space: pre;
+      }
+
       #error-dismiss {
-        padding: 0.5em;
         float: right;
       }
 
@@ -25,8 +32,8 @@
   </head>
   <body>
     <div id="error">
-      <span id="error-dismiss">×</span>
-      <span id="error-message"></span>
+      <p id="error-dismiss">×</p>
+      <p id="error-message"></p>
     </div>
 
     <h2>Welcome</h2>

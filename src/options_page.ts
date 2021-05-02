@@ -6,9 +6,12 @@ const limitSelector = document.getElementById("option-limit")!;
 const limitAllCookies = document.getElementById("limit-all-cookies")!;
 
 const reportError = (error: any): void => {
-  errorBox.style.display = "inherit";
+  errorBox.style.display = "block";
   if (error instanceof Error) {
     errorMessageElement.textContent = `Error: ${error.message}`;
+    if (error.stack) {
+      errorMessageElement.textContent += "\nStack trace:\n" + error.stack;
+    }
   } else {
     errorMessageElement.textContent = `Error: ${error}`;
   }
@@ -54,7 +57,8 @@ const reportError = (error: any): void => {
 
   await (async () => {
     dismissErrorButton.addEventListener("click", () => {
-      errorBox.style.display = "";
+      errorBox.style.display = "none";
+      errorMessageElement.textContent = "";
     });
 
     var selected = false;
