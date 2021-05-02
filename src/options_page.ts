@@ -94,32 +94,34 @@ const reportError = (error: any): void => {
     limitAllCookies.addEventListener("click", async () => {
       try {
         if (currentOptions.cookieLimitInSeconds) {
-          const now = Date.now() / 1000;
+          const now = (Date.now() / 1000) | 0;
           const limit = now + currentOptions.cookieLimitInSeconds;
           const cookies = await browser.cookies.getAll({});
+          const limitedCookies = cookies
+            .filter(
+              (cookie) =>
+                cookie.expirationDate != null && cookie.expirationDate > limit,
+            )
+            .map((cookie) => ({
+              domain: cookie.domain,
+              firstPartyDomain: cookie.firstPartyDomain,
+              httpOnly: cookie.httpOnly,
+              name: cookie.name,
+              path: cookie.path,
+              sameSite: cookie.sameSite,
+              secure: cookie.secure,
+              storeId: cookie.storeId,
+              value: cookie.value,
+              expirationDate: limit,
+              url:
+                (cookie as any).url ||
+                cookie.domain.replace(
+                  /^(\.)?/,
+                  cookie.secure ? "https://" : "http://",
+                ) + cookie.path,
+            }));
           await Promise.all(
-            cookies
-              .filter(
-                (cookie) =>
-                  cookie.expirationDate != null &&
-                  cookie.expirationDate > limit,
-              )
-              .map((cookie) => ({
-                domain: cookie.domain,
-                firstPartyDomain: cookie.firstPartyDomain,
-                httpOnly: cookie.httpOnly,
-                name: cookie.name,
-                path: cookie.path,
-                sameSite: cookie.sameSite,
-                secure: cookie.secure,
-                storeId: cookie.storeId,
-                value: cookie.value,
-                expirationDate: limit,
-                url:
-                  (cookie as any).url ||
-                  cookie.domain.replace(/^(\.)?/, "https://") + cookie.path,
-              }))
-              .map((cookie) => browser.cookies.set(cookie)),
+            limitedCookies.map((cookie) => browser.cookies.set(cookie)),
           );
           await refreshPage();
         }
