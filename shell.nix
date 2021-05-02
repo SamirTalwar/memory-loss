@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix/pkgs.nix }:
+{ pkgs ? import <nixpkgs> { } }:
 with pkgs;
 mkShell {
   name = "memory-loss";
