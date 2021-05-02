@@ -1,4 +1,5 @@
 import * as http from "http";
+import * as net from "net";
 import {By, WebDriver} from "selenium-webdriver";
 
 import * as cookieServerManagement from "./cookie_server";
@@ -16,13 +17,16 @@ let driver: WebDriver;
 let addonOptionsUrl: string;
 
 beforeAll(async () => {
-  [
-    [cookieServerUrl, cookieServer],
-    [driver, addonOptionsUrl],
-  ] = await Promise.all([
+  [cookieServer, [driver, addonOptionsUrl]] = await Promise.all([
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
+  const cookieServerAddress = cookieServer.address() as net.AddressInfo | null;
+  if (cookieServerAddress == null) {
+    await cookieServerManagement.stop(cookieServer);
+    throw new Error("The cookie server has no address.");
+  }
+  cookieServerUrl = `http://localhost:${cookieServerAddress.port}`;
 }, 10000);
 
 afterAll(async () => {
