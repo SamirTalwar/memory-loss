@@ -1,5 +1,7 @@
+import * as childProcess from "child_process";
 import * as http from "http";
 import * as net from "net";
+import * as util from "util";
 import {By, WebDriver} from "selenium-webdriver";
 
 import * as cookieServerManagement from "./cookie_server";
@@ -13,7 +15,11 @@ const TWO_WEEKS = ONE_WEEK * 2;
 const ONE_MONTH = ONE_DAY * 30;
 const ONE_YEAR = ONE_DAY * 365;
 
+let host: string;
 let cookieServerUrl: string;
+let cookieServerUrlWithIPv4: string;
+let cookieServerUrlWithIPv6: string;
+let cookieServerUrlWithHostname: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
 let addonOptionsUrl: string;
@@ -23,12 +29,19 @@ beforeAll(async () => {
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
+  const hostnameProcess = await util.promisify(childProcess.execFile)(
+    "hostname",
+  );
+  host = hostnameProcess.stdout;
   const cookieServerAddress = cookieServer.address() as net.AddressInfo | null;
   if (cookieServerAddress == null) {
     await cookieServerManagement.stop(cookieServer);
     throw new Error("The cookie server has no address.");
   }
   cookieServerUrl = `http://localhost:${cookieServerAddress.port}`;
+  cookieServerUrlWithHostname = `http://${host}:${cookieServerAddress.port}`;
+  cookieServerUrlWithIPv4 = `http://127.0.0.1:${cookieServerAddress.port}`;
+  cookieServerUrlWithIPv6 = `http://[::1]:${cookieServerAddress.port}`;
 }, 10000);
 
 afterAll(async () => {
@@ -41,6 +54,12 @@ afterAll(async () => {
 beforeEach(async () => {
   await driver.navigate().to(cookieServerUrl);
   await driver.manage().deleteAllCookies();
+
+  await driver.navigate().to(addonOptionsUrl);
+  const limitOption = await driver.findElement(
+    By.css('#option-limit > option[data-description="forever"]'),
+  );
+  await limitOption.click();
 });
 
 const submitNewCookie = async (
@@ -53,14 +72,18 @@ const submitNewCookie = async (
     .click(driver.findElement(By.id("submit-new-cookie")))
     .perform();
   await driver.wait(async () => {
-    const cookieNameElements = await driver.findElements(
-      By.css("#cookies .cookie-name"),
-    );
-    const cookieNames = await Promise.all(
-      cookieNameElements.map((element) => element.getText()),
-    );
-    return cookieNames.indexOf(name) >= 0;
-  });
+    try {
+      const cookieNameElements = await driver.findElements(
+        By.css("#cookies .cookie-name"),
+      );
+      const cookieNames = await Promise.all(
+        cookieNameElements.map((element) => element.getText()),
+      );
+      return cookieNames.indexOf(name) >= 0;
+    } catch (e) {
+      return false;
+    }
+  }, 2000);
 };
 
 const readCookies = async (): Promise<Array<{name: string; value: string}>> => {
@@ -76,9 +99,69 @@ const readCookies = async (): Promise<Array<{name: string; value: string}>> => {
   );
 };
 
-test("cookies are set as usual", async () => {
-  await driver.navigate().to(cookieServerUrl);
+const testPreExistingCookies = async (
+  serverUrl: string,
+  setCookieHeaders: string[],
+): Promise<void> => {
   const now = Date.now() / 1000;
+  const cookies = setCookieHeaders.map((header) => ({
+    name: header.split("=", 1)[0]!,
+    setCookieHeader: header,
+  }));
+
+  await driver.navigate().to(serverUrl);
+  for (const cookie of cookies) {
+    await submitNewCookie(cookie.name, cookie.setCookieHeader);
+  }
+
+  await driver.navigate().to(addonOptionsUrl);
+  const limitOption = await driver.findElement(
+    By.css('#option-limit > option[data-description="1 week"]'),
+  );
+  await limitOption.click();
+
+  await driver.navigate().to(serverUrl);
+  const driverOptions = driver.manage();
+  const cookiesBeforeLimiting = await Promise.all(
+    cookies.map((cookie) => driverOptions.getCookie(cookie.name)),
+  );
+  for (const cookie of cookiesBeforeLimiting) {
+    expect(cookie.expiry).toBeGreaterThan(now + TWO_WEEKS - 5);
+    expect(cookie.expiry).toBeLessThan(now + TWO_WEEKS + 5);
+  }
+
+  await driver.navigate().to(addonOptionsUrl);
+  const violatingCookiesDescription = await driver
+    .findElement(By.id("violating-cookies-description"))
+    .then((element) => element.getText());
+  expect(violatingCookiesDescription).toMatch(
+    /There (is|are) \d+ cookies? that violates? the above limit./,
+  );
+
+  await driver
+    .actions()
+    .click(driver.findElement(By.id("limit-all-cookies")))
+    .perform();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const nonViolatingCookiesDescription = await driver
+    .findElement(By.id("violating-cookies-description"))
+    .then((element) => element.getText());
+  expect(nonViolatingCookiesDescription).toBe("");
+
+  await driver.navigate().to(serverUrl);
+  const cookiesAfterLimiting = await Promise.all(
+    cookies.map((cookie) => driverOptions.getCookie(cookie.name)),
+  );
+  for (const cookie of cookiesAfterLimiting) {
+    expect(cookie.expiry).toBeGreaterThan(now + ONE_WEEK - 5);
+    expect(cookie.expiry).toBeLessThan(now + ONE_WEEK + 5);
+  }
+};
+
+test("cookies are set as usual", async () => {
+  const now = Date.now() / 1000;
+  await driver.navigate().to(cookieServerUrl);
   await submitNewCookie(
     "some_name",
     `some_name=the cookie value; Max-Age=${ONE_HOUR}; SameSite=Strict`,
@@ -102,8 +185,8 @@ test("long-lived cookies are capped to the configuration", async () => {
   );
   await limitOption.click();
 
-  await driver.navigate().to(cookieServerUrl);
   const now = Date.now() / 1000;
+  await driver.navigate().to(cookieServerUrl);
   await submitNewCookie(
     "forever",
     `forever=infinity; Max-Age=${ONE_YEAR}; SameSite=Strict`,
@@ -117,41 +200,26 @@ test("long-lived cookies are capped to the configuration", async () => {
   expect(cookie.expiry).toBeLessThan(now + ONE_MONTH + 5);
 });
 
-test("pre-existing long-lived cookies can be limited in the Options page", async () => {
-  await driver.navigate().to(cookieServerUrl);
-  const now = Date.now() / 1000;
-  await submitNewCookie(
-    "abc",
-    `abc=123; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-  );
+test("pre-existing long-lived cookies for localhost can be limited in the Options page", () =>
+  testPreExistingCookies(cookieServerUrl, [
+    `localhost-cookie=123; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    `localhost-cookie-with-domain=123; Domain=localhost; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+  ]));
 
-  await driver.navigate().to(addonOptionsUrl);
-  const limitOption = await driver.findElement(
-    By.css('#option-limit > option[data-description="1 week"]'),
-  );
-  await limitOption.click();
+test("pre-existing long-lived cookies for a hostname can be limited in the Options page", () =>
+  testPreExistingCookies(cookieServerUrlWithHostname, [
+    `hostname-cookie=345; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    `hostname-cookie-with-domain=345; Domain=${host}; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+  ]));
 
-  await driver.navigate().to(cookieServerUrl);
-  const cookieBeforeLimiting = await driver.manage().getCookie("abc");
-  expect(cookieBeforeLimiting.expiry).toBeGreaterThan(now + TWO_WEEKS - 5);
-  expect(cookieBeforeLimiting.expiry).toBeLessThan(now + TWO_WEEKS + 5);
+test("pre-existing long-lived cookies for an IPv4 address can be limited in the Options page", () =>
+  testPreExistingCookies(cookieServerUrlWithIPv4, [
+    `ipv4-cookie=456; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    `ipv4-cookie-with-domain=456; Domain=127.0.0.1; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+  ]));
 
-  await driver.navigate().to(addonOptionsUrl);
-  const violatingCookiesDescription = await driver
-    .findElement(By.id("violating-cookies-description"))
-    .then((element) => element.getText());
-  expect(violatingCookiesDescription).toBe(
-    "There is 1 cookie that violates the above limit.",
-  );
-
-  await driver
-    .actions()
-    .click(driver.findElement(By.id("limit-all-cookies")))
-    .perform();
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  await driver.navigate().to(cookieServerUrl);
-  const cookieAfterLimiting = await driver.manage().getCookie("abc");
-  expect(cookieAfterLimiting.expiry).toBeGreaterThan(now + ONE_WEEK - 5);
-  expect(cookieAfterLimiting.expiry).toBeLessThan(now + ONE_WEEK + 5);
-});
+// Firefox does not seem to handle setting IPv6 cookies. They end up with the wrong domain, e.g. "::1" instead of "[::1]".
+test.skip("pre-existing long-lived cookies for an IPv6 address can be limited in the Options page", () =>
+  testPreExistingCookies(cookieServerUrlWithIPv6, [
+    `ipv6-cookie=678; Domain=[::1]; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+  ]));

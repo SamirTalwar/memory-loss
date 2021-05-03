@@ -49,9 +49,11 @@ const reportError = (error: any): void => {
         }
       } else {
         violatingCookiesSection.style.display = "";
+        violatingCookiesDescription.textContent = "";
       }
     } else {
       violatingCookiesSection.style.display = "";
+      violatingCookiesDescription.textContent = "";
     }
   };
 
@@ -104,14 +106,17 @@ const reportError = (error: any): void => {
                 cookie.expirationDate > maxExpirationDate,
             )
             .map((cookie) => {
-              // We do not include `domain` in the generated cookie because it
-              // breaks localhost and cookies without a `Domain` attribute.
-              // However, we do use it to reconstruct the URL.
+              // We do not include `domain` in the generated cookie unless it
+              // starts with a ".", which signifies that the cookie was actually
+              // Set with a "Domain" attribute.
               const domain = cookie.domain.startsWith(".")
+                ? cookie.domain
+                : undefined;
+              const urlProtocol = cookie.secure ? "https://" : "http://";
+              const urlDomain = cookie.domain.startsWith(".")
                 ? cookie.domain.substring(1)
                 : cookie.domain;
-              const protocol = cookie.secure ? "https://" : "http://";
-              const url = protocol + domain + cookie.path;
+              const url = urlProtocol + urlDomain + cookie.path;
               return {
                 firstPartyDomain: cookie.firstPartyDomain,
                 httpOnly: cookie.httpOnly,
@@ -121,6 +126,7 @@ const reportError = (error: any): void => {
                 secure: cookie.secure,
                 storeId: cookie.storeId,
                 value: cookie.value,
+                domain,
                 url,
                 expirationDate: maxExpirationDate,
               };
