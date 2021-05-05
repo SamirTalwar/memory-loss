@@ -15,8 +15,10 @@ const DEFAULT_OPTIONS: Options = {
 export const COOKIE_LIMIT_OPTIONS = [
   {description: "1 day", value: 1 * DAYS},
   {description: "1 week", value: 7 * DAYS},
+  {description: "2 weeks", value: 14 * DAYS},
   {description: "1 month", value: 30 * DAYS},
   {description: "3 months", value: 90 * DAYS},
+  {description: "6 months", value: 180 * DAYS},
   {description: "1 year", value: 365 * DAYS},
 ];
 
