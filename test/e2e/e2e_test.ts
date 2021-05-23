@@ -21,9 +21,8 @@ const ONE_MONTH = ONE_DAY * 30;
 const ONE_YEAR = ONE_DAY * 365;
 
 let host: string;
+let port: number;
 let cookieServerUrl: string;
-let cookieServerUrlWithIPv4: string;
-let cookieServerUrlWithIPv6: string;
 let cookieServerUrlWithHostname: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
@@ -43,10 +42,9 @@ beforeAll(async () => {
     await cookieServerManagement.stop(cookieServer);
     throw new Error("The cookie server has no address.");
   }
-  cookieServerUrl = `http://localhost:${cookieServerAddress.port}`;
-  cookieServerUrlWithHostname = `http://${host}:${cookieServerAddress.port}`;
-  cookieServerUrlWithIPv4 = `http://127.0.0.1:${cookieServerAddress.port}`;
-  cookieServerUrlWithIPv6 = `http://[::1]:${cookieServerAddress.port}`;
+  port = cookieServerAddress.port;
+  cookieServerUrl = `http://localhost:${port}`;
+  cookieServerUrlWithHostname = `http://${host}:${port}`;
 }, 10000);
 
 afterAll(async () => {
@@ -121,15 +119,22 @@ const readCookies = readCookiesIn(By.css("#cookies li"));
 const readThirdPartyCookies = readCookiesIn(By.css("#third-party-cookies li"));
 
 const testPreExistingCookies = async (
-  serverUrl: string,
-  setCookieHeaders: string[],
+  host: string,
+  port: number,
 ): Promise<void> => {
-  const now = Date.now() / 1000;
-  const cookies = setCookieHeaders.map((header) => ({
-    name: header.split("=", 1)[0]!,
-    setCookieHeader: header,
-  }));
+  const serverUrl = `http://${host}:${port}`;
+  const cookies = [
+    {
+      name: "cookie",
+      setCookieHeader: `cookie=123; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    },
+    {
+      name: "cookie-with-domain",
+      setCookieHeader: `cookie-with-domain=123; Domain=${host}; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    },
+  ];
 
+  const now = Date.now() / 1000;
   await driver.navigate().to(serverUrl);
   for (const cookie of cookies) {
     await submitNewCookie(cookie.name, cookie.setCookieHeader);
@@ -247,25 +252,14 @@ test("third-party cookies are also capped", async () => {
 });
 
 test("pre-existing long-lived cookies for localhost can be limited in the Options page", () =>
-  testPreExistingCookies(cookieServerUrl, [
-    `localhost-cookie=123; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-    `localhost-cookie-with-domain=123; Domain=localhost; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-  ]));
+  testPreExistingCookies("localhost", port));
 
 test("pre-existing long-lived cookies for a hostname can be limited in the Options page", () =>
-  testPreExistingCookies(cookieServerUrlWithHostname, [
-    `hostname-cookie=345; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-    `hostname-cookie-with-domain=345; Domain=${host}; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-  ]));
+  testPreExistingCookies(host, port));
 
 test("pre-existing long-lived cookies for an IPv4 address can be limited in the Options page", () =>
-  testPreExistingCookies(cookieServerUrlWithIPv4, [
-    `ipv4-cookie=456; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-    `ipv4-cookie-with-domain=456; Domain=127.0.0.1; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-  ]));
+  testPreExistingCookies("127.0.0.1", port));
 
 // Firefox does not seem to handle setting IPv6 cookies. They end up with the wrong domain, e.g. "::1" instead of "[::1]".
 test.skip("pre-existing long-lived cookies for an IPv6 address can be limited in the Options page", () =>
-  testPreExistingCookies(cookieServerUrlWithIPv6, [
-    `ipv6-cookie=678; Domain=[::1]; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
-  ]));
+  testPreExistingCookies("[::1]", port));
