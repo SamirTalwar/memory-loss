@@ -36,6 +36,10 @@ test/e2e: build/test test/vendor
 test/unit:
 	jest test/unit
 
+.PHONY: test/e2e/cookie-server
+test/e2e/cookie-server:
+	find test/e2e/cookie-server | entr -rs './node_modules/.bin/tsc --incremental && node out/test/e2e/cookie-server/main.js'
+
 test/vendor: test/vendor/web-ext/src/firefox/preferences.ts test/vendor/web-ext/src/firefox/remote.ts
 	touch $@
 
