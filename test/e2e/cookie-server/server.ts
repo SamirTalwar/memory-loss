@@ -76,8 +76,10 @@ const page = (
           }
           for (const {name, value} of responseData.cookies) {
             const cookieName = document.createElement("span");
+            cookieName.className = "cookie-name";
             cookieName.textContent = name;
             const cookieValue = document.createElement("span");
+            cookieValue.className = "cookie-value";
             cookieValue.textContent = value;
             const li = document.createElement("li");
             li.appendChild(cookieName);
@@ -99,7 +101,7 @@ const page = (
           const setCookieHeader = document.querySelector("[name=new-third-party-cookie]").value;
           image.src = "${thirdPartyDomain}/third-party-image.gif?setCookieHeader=" + encodeURIComponent(setCookieHeader);
           document.body.appendChild(image);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 100));
           await loadThirdPartyCookies();
         } catch (error) {
           console.error("Could not submit a new third-party cookie.", error);

@@ -7,6 +7,11 @@ import {By, WebDriver} from "selenium-webdriver";
 import * as cookieServerManagement from "./cookie_server";
 import * as firefoxManagement from "./firefox";
 
+interface Cookie {
+  name: string;
+  value: string;
+}
+
 const ONE_MINUTE = 60;
 const ONE_HOUR = ONE_MINUTE * 60;
 const ONE_DAY = ONE_HOUR * 24;
@@ -62,42 +67,58 @@ beforeEach(async () => {
   await limitOption.click();
 });
 
-const submitNewCookie = async (
-  name: string,
-  setCookieHeader: string,
-): Promise<void> => {
-  await driver.findElement(By.name("new-cookie")).sendKeys(setCookieHeader);
-  await driver
-    .actions()
-    .click(driver.findElement(By.id("submit-new-cookie")))
-    .perform();
-  await driver.wait(async () => {
-    try {
-      const cookieNameElements = await driver.findElements(
-        By.css("#cookies .cookie-name"),
-      );
-      const cookieNames = await Promise.all(
-        cookieNameElements.map((element) => element.getText()),
-      );
-      return cookieNames.indexOf(name) >= 0;
-    } catch (e) {
-      return false;
-    }
-  }, 2000);
-};
+const submitNewCookieIn =
+  (targets: {newCookieInput: By; submitNewCookieButton: By; cookieNames: By}) =>
+  async (name: string, setCookieHeader: string): Promise<void> => {
+    await driver.findElement(targets.newCookieInput).sendKeys(setCookieHeader);
+    await driver
+      .actions()
+      .click(driver.findElement(targets.submitNewCookieButton))
+      .perform();
+    await driver.wait(async () => {
+      try {
+        const cookieNameElements = await driver.findElements(
+          targets.cookieNames,
+        );
+        const cookieNames = await Promise.all(
+          cookieNameElements.map((element) => element.getText()),
+        );
+        return cookieNames.indexOf(name) >= 0;
+      } catch (e) {
+        return false;
+      }
+    }, 2000);
+  };
 
-const readCookies = async (): Promise<Array<{name: string; value: string}>> => {
-  const cookieListItems = await driver.findElements(By.css("#cookies li"));
-  return Promise.all(
-    cookieListItems.map(async (item) => {
-      const [name, value] = await Promise.all([
-        item.findElement(By.css(".cookie-name")).getText(),
-        item.findElement(By.css(".cookie-value")).getText(),
-      ]);
-      return {name, value};
-    }),
-  );
-};
+const submitNewCookie = submitNewCookieIn({
+  newCookieInput: By.name("new-cookie"),
+  submitNewCookieButton: By.id("submit-new-cookie"),
+  cookieNames: By.css("#cookies .cookie-name"),
+});
+
+const submitNewThirdPartyCookie = submitNewCookieIn({
+  newCookieInput: By.name("new-third-party-cookie"),
+  submitNewCookieButton: By.id("submit-new-third-party-cookie"),
+  cookieNames: By.css("#third-party-cookies .cookie-name"),
+});
+
+const readCookiesIn =
+  (cookieListItemsTarget: By) => async (): Promise<Cookie[]> => {
+    const cookieListItems = await driver.findElements(cookieListItemsTarget);
+    return Promise.all(
+      cookieListItems.map(async (item) => {
+        const [name, value] = await Promise.all([
+          item.findElement(By.css(".cookie-name")).getText(),
+          item.findElement(By.css(".cookie-value")).getText(),
+        ]);
+        return {name, value};
+      }),
+    );
+  };
+
+const readCookies = readCookiesIn(By.css("#cookies li"));
+
+const readThirdPartyCookies = readCookiesIn(By.css("#third-party-cookies li"));
 
 const testPreExistingCookies = async (
   serverUrl: string,
@@ -198,6 +219,31 @@ test("long-lived cookies are capped to the configuration", async () => {
   const cookie = await driver.manage().getCookie("forever");
   expect(cookie.expiry).toBeGreaterThan(now + ONE_MONTH - 5);
   expect(cookie.expiry).toBeLessThan(now + ONE_MONTH + 5);
+});
+
+test("third-party cookies are also capped", async () => {
+  await driver.navigate().to(addonOptionsUrl);
+  const limitOption = await driver.findElement(
+    By.css('#option-limit > option[data-description="1 week"]'),
+  );
+  await limitOption.click();
+
+  const now = Date.now() / 1000;
+  await driver
+    .navigate()
+    .to(`${cookieServerUrl}/?thirdPartyDomain=${cookieServerUrlWithHostname}`);
+  await submitNewThirdPartyCookie(
+    "wibble",
+    `wibble=wobble; Max-Age=${ONE_MONTH}`,
+  );
+
+  const serverCookies = await readThirdPartyCookies();
+  expect(serverCookies).toStrictEqual([{name: "wibble", value: "wobble"}]);
+
+  await driver.navigate().to(cookieServerUrlWithHostname);
+  const cookie = await driver.manage().getCookie("wibble");
+  expect(cookie.expiry).toBeGreaterThan(now + ONE_WEEK - 5);
+  expect(cookie.expiry).toBeLessThan(now + ONE_WEEK + 5);
 });
 
 test("pre-existing long-lived cookies for localhost can be limited in the Options page", () =>
