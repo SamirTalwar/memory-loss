@@ -2,9 +2,10 @@ import * as childProcess from "child_process";
 import * as http from "http";
 import * as net from "net";
 import * as util from "util";
-import {By, WebDriver} from "selenium-webdriver";
+import {WebDriver} from "selenium-webdriver";
 
 import newCookiePage, {CookiePage} from "./cookie_page";
+import newOptionsPage, {OptionsPage} from "./options_page";
 import * as cookieServerManagement from "./cookie_server";
 import * as firefoxManagement from "./firefox";
 
@@ -24,13 +25,15 @@ let cookieServerUrl: string;
 let cookieServerUrlWithHostname: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
-let addonOptionsUrl: string;
+let optionsPage: OptionsPage;
 
 beforeAll(async () => {
+  let addonOptionsUrl;
   [cookieServer, [driver, addonOptionsUrl]] = await Promise.all([
     cookieServerManagement.start(),
     firefoxManagement.start(),
   ]);
+  optionsPage = newOptionsPage(driver, addonOptionsUrl);
   const hostnameProcess = await execFile("hostname");
   host = hostnameProcess.stdout;
   const cookieServerAddress = cookieServer.address() as net.AddressInfo | null;
@@ -54,11 +57,8 @@ beforeEach(async () => {
   await driver.navigate().to(cookieServerUrl);
   await driver.manage().deleteAllCookies();
 
-  await driver.navigate().to(addonOptionsUrl);
-  const limitOption = await driver.findElement(
-    By.css('#option-limit > option[data-description="forever"]'),
-  );
-  await limitOption.click();
+  await optionsPage.go();
+  await optionsPage.selectLimit("forever");
 });
 
 const testPreExistingCookies = async (
@@ -84,11 +84,8 @@ const testPreExistingCookies = async (
     await cookiePage.submitNewCookie(cookie.name, cookie.setCookieHeader);
   }
 
-  await driver.navigate().to(addonOptionsUrl);
-  const limitOption = await driver.findElement(
-    By.css('#option-limit > option[data-description="1 week"]'),
-  );
-  await limitOption.click();
+  await optionsPage.go();
+  await optionsPage.selectLimit("1 week");
 
   await driver.navigate().to(serverUrl);
   const driverOptions = driver.manage();
@@ -100,23 +97,16 @@ const testPreExistingCookies = async (
     expect(cookie.expiry).toBeLessThan(now + TWO_WEEKS + 5);
   }
 
-  await driver.navigate().to(addonOptionsUrl);
-  const violatingCookiesDescription = await driver
-    .findElement(By.id("violating-cookies-description"))
-    .then((element) => element.getText());
+  await optionsPage.go();
+  const violatingCookiesDescription =
+    await optionsPage.violatingCookiesDescription();
   expect(violatingCookiesDescription).toBe(
     "There are 2 cookies that violate the above limit.",
   );
 
-  await driver
-    .actions()
-    .click(driver.findElement(By.id("limit-all-cookies")))
-    .perform();
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const nonViolatingCookiesDescription = await driver
-    .findElement(By.id("violating-cookies-description"))
-    .then((element) => element.getText());
+  await optionsPage.limitAllCookies();
+  const nonViolatingCookiesDescription =
+    await optionsPage.violatingCookiesDescription();
   expect(nonViolatingCookiesDescription).toBe("");
 
   await driver.navigate().to(serverUrl);
@@ -131,7 +121,7 @@ const testPreExistingCookies = async (
 
 const testPreExistingThirdPartyCookies = async (
   driver: WebDriver,
-  addonOptionsUrl: string,
+  optionsPage: OptionsPage,
   cookiePage: CookiePage,
 ) => {
   const serverUrl = `${cookieServerUrl}/?thirdPartyDomain=${cookieServerUrlWithHostname}`;
@@ -154,29 +144,17 @@ const testPreExistingThirdPartyCookies = async (
     );
   }
 
-  await driver.navigate().to(addonOptionsUrl);
-  const limitOption = await driver.findElement(
-    By.css('#option-limit > option[data-description="1 week"]'),
-  );
-  await limitOption.click();
-
-  await driver.navigate().to(addonOptionsUrl);
-  const violatingCookiesDescription = await driver
-    .findElement(By.id("violating-cookies-description"))
-    .then((element) => element.getText());
+  await optionsPage.go();
+  await optionsPage.selectLimit("1 week");
+  const violatingCookiesDescription =
+    await optionsPage.violatingCookiesDescription();
   expect(violatingCookiesDescription).toBe(
     "There are 2 cookies that violate the above limit.",
   );
 
-  await driver
-    .actions()
-    .click(driver.findElement(By.id("limit-all-cookies")))
-    .perform();
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const nonViolatingCookiesDescription = await driver
-    .findElement(By.id("violating-cookies-description"))
-    .then((element) => element.getText());
+  await optionsPage.limitAllCookies();
+  const nonViolatingCookiesDescription =
+    await optionsPage.violatingCookiesDescription();
   expect(nonViolatingCookiesDescription).toBe("");
 };
 
@@ -201,11 +179,8 @@ test("cookies are set as usual", async () => {
 });
 
 test("long-lived cookies are capped to the configuration", async () => {
-  await driver.navigate().to(addonOptionsUrl);
-  const limitOption = await driver.findElement(
-    By.css('#option-limit > option[data-description="1 month"]'),
-  );
-  await limitOption.click();
+  await optionsPage.go();
+  await optionsPage.selectLimit("1 month");
 
   const cookiePage = newCookiePage(driver);
   const now = Date.now() / 1000;
@@ -224,11 +199,8 @@ test("long-lived cookies are capped to the configuration", async () => {
 });
 
 test("third-party cookies are also capped", async () => {
-  await driver.navigate().to(addonOptionsUrl);
-  const limitOption = await driver.findElement(
-    By.css('#option-limit > option[data-description="1 week"]'),
-  );
-  await limitOption.click();
+  await optionsPage.go();
+  await optionsPage.selectLimit("1 week");
 
   const cookiePage = newCookiePage(driver);
   const now = Date.now() / 1000;
@@ -263,24 +235,19 @@ test.skip("pre-existing, long-lived cookies for an IPv6 address can be limited i
   testPreExistingCookies("[::1]", port, newCookiePage(driver)));
 
 test("pre-existing, third-party, long-lived cookies can be limited in the Options page", () =>
-  testPreExistingThirdPartyCookies(
-    driver,
-    addonOptionsUrl,
-    newCookiePage(driver),
-  ));
+  testPreExistingThirdPartyCookies(driver, optionsPage, newCookiePage(driver)));
 
 // With "strict" privacy protection enabled, Firefox does not provide enough information to rewrite cookies after-the-fact.
 // See: https://bugzilla.mozilla.org/show_bug.cgi?id=1669716
 test.skip("pre-existing, third-party, long-lived cookies can be limited in the Options page with strict privacy protection", async () => {
-  const [strictDriver, strictAddonOptionsUrl] =
-    await firefoxManagement.startStrict();
+  const [driver, addonOptionsUrl] = await firefoxManagement.startStrict();
   try {
     await testPreExistingThirdPartyCookies(
-      strictDriver,
-      strictAddonOptionsUrl,
-      newCookiePage(strictDriver),
+      driver,
+      newOptionsPage(driver, addonOptionsUrl),
+      newCookiePage(driver),
     );
   } finally {
-    await firefoxManagement.stop(strictDriver);
+    await firefoxManagement.stop(driver);
   }
 }, 10000);
