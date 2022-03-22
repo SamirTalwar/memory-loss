@@ -5,7 +5,7 @@ const dismissErrorButton = document.getElementById("error-dismiss")!;
 const limitSelector = document.getElementById("option-limit")!;
 const limitAllCookies = document.getElementById("limit-all-cookies")!;
 
-const reportError = (error: any): void => {
+const showError = (error: any): void => {
   errorBox.style.display = "block";
   if (error instanceof Error) {
     errorMessageElement.textContent = `Error: ${error.message}`;
@@ -24,9 +24,8 @@ const reportError = (error: any): void => {
   const currentOptions = await options.get();
 
   const refreshPage = async () => {
-    const violatingCookiesSection = document.getElementById(
-      "violating-cookies",
-    )!;
+    const violatingCookiesSection =
+      document.getElementById("violating-cookies")!;
     const violatingCookiesDescription = document.getElementById(
       "violating-cookies-description",
     )!;
@@ -137,10 +136,10 @@ const reportError = (error: any): void => {
           await refreshPage();
         }
       } catch (error) {
-        reportError(error);
+        showError(error);
       }
     });
   })();
 
   await refreshPage();
-})().catch(reportError);
+})().catch(showError);
