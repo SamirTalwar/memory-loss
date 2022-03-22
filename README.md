@@ -20,6 +20,7 @@ For example, if you select a limit of "1 month", and then visit Your Favorite So
 - [x] Make the maximum cookie expiry time customizable.
 - [x] Prompt the user to configure the extension on installation.
 - [x] Provide a button to overwrite cookie expiry times for pre-existing cookies.
+- [ ] Limit cookies set in JavaScript, as opposed to headers.
 - [ ] Optionally overwrite cookie expiry times for pre-existing cookies on startup.
 - [ ] Optionally wipe session cookies on startup.
 - [ ] Customize the maximum cookie expiry time per domain.
