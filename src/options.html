@@ -28,6 +28,10 @@
       #violating-cookies {
         display: none;
       }
+
+      #violating-cookies-disabled {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -63,10 +67,17 @@
     </p>
 
     <div id="violating-cookies">
+      <h3>Some cookies are in violation</h3>
       <p id="violating-cookies-description">
         There are some cookies that violate the above limit.
       </p>
-      <p><button id="limit-all-cookies">Limit all cookies</button></p>
+      <p id="violating-cookies-disabled">
+        Unfortunately, we do not support limiting these cookies in this version
+        of your browser.
+      </p>
+      <p id="violating-cookies-action">
+        <button id="limit-all-cookies">Limit all cookies</button>
+      </p>
     </div>
   </body>
 </html>

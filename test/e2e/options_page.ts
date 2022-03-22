@@ -5,16 +5,32 @@ export interface OptionsPage {
   selectLimit: (limit: string) => Promise<void>;
   limitAllCookies: () => Promise<void>;
   violatingCookiesDescription: () => Promise<string>;
+  violatingCookiesDisabledExplanation: () => Promise<string>;
 }
 
 export default (driver: WebDriver, addonOptionsUrl: string): OptionsPage => {
-  const go = () => driver.navigate().to(addonOptionsUrl);
+  const pause = (): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, 100));
+
+  const go = () =>
+    driver
+      .navigate()
+      .to(addonOptionsUrl)
+      .then(() => pause());
 
   const selectLimit = async (limit: string) => {
-    const limitOption = await driver.findElement(
-      By.css(`#option-limit > option[data-description="${limit}"]`),
-    );
-    await limitOption.click();
+    await driver.wait(async () => {
+      try {
+        const element = await driver.findElement(
+          By.css(`#option-limit > option[data-description="${limit}"]`),
+        );
+        await element.click();
+        await pause();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    });
   };
 
   const limitAllCookies = async () => {
@@ -22,7 +38,7 @@ export default (driver: WebDriver, addonOptionsUrl: string): OptionsPage => {
       .actions()
       .click(driver.findElement(By.id("limit-all-cookies")))
       .perform();
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await pause();
   };
 
   const violatingCookiesDescription = () =>
@@ -30,10 +46,16 @@ export default (driver: WebDriver, addonOptionsUrl: string): OptionsPage => {
       .findElement(By.id("violating-cookies-description"))
       .then((element) => element.getText());
 
+  const violatingCookiesDisabledExplanation = () =>
+    driver
+      .findElement(By.id("violating-cookies-disabled"))
+      .then((element) => element.getText());
+
   return {
     go,
     selectLimit,
     limitAllCookies,
     violatingCookiesDescription,
+    violatingCookiesDisabledExplanation,
   };
 };

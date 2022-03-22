@@ -56,6 +56,8 @@ afterAll(async () => {
 beforeEach(async () => {
   await driver.navigate().to(cookieServerUrl);
   await driver.manage().deleteAllCookies();
+  await driver.navigate().to(cookieServerUrlWithHostname);
+  await driver.manage().deleteAllCookies();
 
   await optionsPage.go();
   await optionsPage.selectLimit("forever");
@@ -146,11 +148,17 @@ const testPreExistingThirdPartyCookies = async (
 
   await optionsPage.go();
   await optionsPage.selectLimit("1 week");
+
+  await optionsPage.go();
   const violatingCookiesDescription =
     await optionsPage.violatingCookiesDescription();
   expect(violatingCookiesDescription).toBe(
     "There are 2 cookies that violate the above limit.",
   );
+
+  const noViolatingCookiesDisabledExplanation =
+    await optionsPage.violatingCookiesDisabledExplanation();
+  expect(noViolatingCookiesDisabledExplanation).toBe("");
 
   await optionsPage.limitAllCookies();
   const nonViolatingCookiesDescription =
@@ -234,12 +242,15 @@ test("pre-existing, long-lived cookies for an IPv4 address can be limited in the
 test.skip("pre-existing, long-lived cookies for an IPv6 address can be limited in the Options page", () =>
   testPreExistingCookies("[::1]", port, newCookiePage(driver)));
 
-test("pre-existing, third-party, long-lived cookies can be limited in the Options page", () =>
-  testPreExistingThirdPartyCookies(driver, optionsPage, newCookiePage(driver)));
+test("pre-existing, third-party, long-lived cookies can be limited in the Options page", async () => {
+  await testPreExistingThirdPartyCookies(
+    driver,
+    optionsPage,
+    newCookiePage(driver),
+  );
+});
 
-// With "strict" privacy protection enabled, Firefox does not provide enough information to rewrite cookies after-the-fact.
-// See: https://bugzilla.mozilla.org/show_bug.cgi?id=1669716
-test.skip("pre-existing, third-party, long-lived cookies can be limited in the Options page with strict privacy protection", async () => {
+test("pre-existing, third-party, long-lived cookies can be limited in the Options page with strict privacy protection", async () => {
   const [driver, addonOptionsUrl] = await firefoxManagement.startStrict();
   try {
     await testPreExistingThirdPartyCookies(

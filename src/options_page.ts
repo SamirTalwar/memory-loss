@@ -19,9 +19,14 @@ const showError = (error: any): void => {
 
 (async () => {
   const {default: browser} = await import("webextension-polyfill");
+  const features = await import("./features");
   const options = await import("./options");
 
+  const currentFeatures = await features.status();
   const currentOptions = await options.get();
+
+  const limitSelector = document.getElementById("option-limit")!;
+  const limitAllCookies = document.getElementById("limit-all-cookies")!;
 
   const refreshPage = async () => {
     const violatingCookiesSection =
@@ -29,17 +34,34 @@ const showError = (error: any): void => {
     const violatingCookiesDescription = document.getElementById(
       "violating-cookies-description",
     )!;
+    const violatingCookiesDisabled = document.getElementById(
+      "violating-cookies-disabled",
+    )!;
+    const violatingCookiesAction = document.getElementById(
+      "violating-cookies-action",
+    )!;
+
+    if (currentFeatures.overwriteExistingCookies.enabled) {
+      violatingCookiesDisabled.style.display = "none";
+      violatingCookiesAction.style.display = "";
+    } else {
+      violatingCookiesDisabled.style.display = "block";
+      violatingCookiesDisabled.textContent =
+        currentFeatures.overwriteExistingCookies.explanation;
+      violatingCookiesAction.style.display = "none";
+    }
+
     if (currentOptions.cookieLimitInSeconds) {
       const now = Date.now() / 1000;
       const limit = now + currentOptions.cookieLimitInSeconds;
-      const cookies = await browser.cookies.getAll({});
+      const cookies = await browser.cookies.getAll({partitionKey: {}});
       const cookiesInViolation = cookies.filter(
         (cookie) =>
           cookie.expirationDate != null && cookie.expirationDate > limit,
       );
       const cookiesInViolationCount = cookiesInViolation.length;
       if (cookiesInViolationCount > 0) {
-        violatingCookiesSection.style.display = "inherit";
+        violatingCookiesSection.style.display = "block";
         if (cookiesInViolationCount === 1) {
           violatingCookiesDescription.textContent =
             "There is 1 cookie that violates the above limit.";
@@ -97,7 +119,7 @@ const showError = (error: any): void => {
         if (currentOptions.cookieLimitInSeconds) {
           const now = (Date.now() / 1000) | 0;
           const maxExpirationDate = now + currentOptions.cookieLimitInSeconds;
-          const cookies = await browser.cookies.getAll({});
+          const cookies = await browser.cookies.getAll({partitionKey: {}});
           const limitedCookies = cookies
             .filter(
               (cookie) =>
@@ -120,6 +142,7 @@ const showError = (error: any): void => {
                 firstPartyDomain: cookie.firstPartyDomain,
                 httpOnly: cookie.httpOnly,
                 name: cookie.name,
+                partitionKey: cookie.partitionKey,
                 path: cookie.path,
                 sameSite: cookie.sameSite,
                 secure: cookie.secure,
