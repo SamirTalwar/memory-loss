@@ -25,6 +25,9 @@ export const start = async (
 ): Promise<[WebDriver, string]> => {
   const debugPort = await findFreeTcpPort();
   const options = new firefox.Options();
+  if (process.env["TEST_BROWSER_BINARY"]) {
+    options.setBinary(process.env["TEST_BROWSER_BINARY"]);
+  }
   options.addArguments("--start-debugger-server", debugPort.toString());
   if (process.env["TEST_BROWSER_HEADLESS"] !== "false") {
     options.headless();
