@@ -3,22 +3,33 @@ build: build/production
 	web-ext build --source-dir=build/production --overwrite-dest
 
 .PHONY: build/production
-build/production:
+build/production: node_modules
 	snowpack build --out=$@
 	cp -f manifest.json $@
 	touch $@
 
 .PHONY: build/development
-build/development:
+build/development: node_modules
 	snowpack build --out=$@
 	cp -f manifest.json $@
 	touch $@
 
 .PHONY: build/test
-build/test:
+build/test: node_modules
 	snowpack build --out=$@
 	jq '. * {"options_ui": {"open_in_tab": true}}' manifest.json > $@/manifest.json
 	touch $@
+
+.PHONY: clean
+clean:
+	rm -rf build out web-ext-artifacts
+
+.PHONY: run
+run: build/production
+	web-ext run --source-dir=build/production
+
+.PHONY: check
+check: build lint test
 
 .PHONY: lint
 lint: build/production
