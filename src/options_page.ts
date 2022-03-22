@@ -18,7 +18,7 @@ const showError = (error: any): void => {
 };
 
 (async () => {
-  const {browser} = await import("webextension-polyfill-ts");
+  const {default: browser} = await import("webextension-polyfill");
   const options = await import("./options");
 
   const currentOptions = await options.get();

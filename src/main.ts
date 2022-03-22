@@ -1,8 +1,8 @@
-import {WebRequest} from "webextension-polyfill-ts";
+import {WebRequest} from "webextension-polyfill";
 import {SetCookieHeader} from "./cookie_header";
 
 (async () => {
-  const {browser} = await import("webextension-polyfill-ts");
+  const {default: browser} = await import("webextension-polyfill");
   const {SetCookieHeader} = await import("./cookie_header");
   const options = await import("./options");
 
