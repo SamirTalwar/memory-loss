@@ -23,6 +23,7 @@ let host: string;
 let port: number;
 let cookieServerUrl: string;
 let cookieServerUrlWithHostname: string;
+let cookieServerUrlWithIPv6: string;
 let cookieServer: http.Server;
 let driver: WebDriver;
 let optionsPage: OptionsPage;
@@ -44,6 +45,7 @@ beforeAll(async () => {
   port = cookieServerAddress.port;
   cookieServerUrl = `http://localhost:${port}`;
   cookieServerUrlWithHostname = `http://${host}:${port}`;
+  cookieServerUrlWithIPv6 = `http://[::1]:${port}`;
 }, 10000);
 
 afterAll(async () => {
@@ -54,10 +56,14 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await driver.navigate().to(cookieServerUrl);
-  await driver.manage().deleteAllCookies();
-  await driver.navigate().to(cookieServerUrlWithHostname);
-  await driver.manage().deleteAllCookies();
+  for (const url of [
+    cookieServerUrl,
+    cookieServerUrlWithHostname,
+    cookieServerUrlWithIPv6,
+  ]) {
+    await driver.navigate().to(url);
+    await driver.manage().deleteAllCookies();
+  }
 
   await optionsPage.go();
   await optionsPage.selectLimit("forever");
@@ -105,6 +111,10 @@ const testPreExistingCookies = async (
   expect(violatingCookiesDescription).toBe(
     "There are 2 cookies that violate the above limit.",
   );
+
+  const noViolatingCookiesDisabledExplanation =
+    await optionsPage.violatingCookiesDisabledExplanation();
+  expect(noViolatingCookiesDisabledExplanation).toBe("");
 
   await optionsPage.limitAllCookies();
   const nonViolatingCookiesDescription =
@@ -239,8 +249,51 @@ test("pre-existing, long-lived cookies for an IPv4 address can be limited in the
   testPreExistingCookies("127.0.0.1", port, newCookiePage(driver)));
 
 // Firefox does not seem to handle setting IPv6 cookies. They end up with the wrong domain, e.g. "::1" instead of "[::1]".
-test.skip("pre-existing, long-lived cookies for an IPv6 address can be limited in the Options page", () =>
-  testPreExistingCookies("[::1]", port, newCookiePage(driver)));
+test("pre-existing, long-lived cookies for an IPv6 address can be limited in the Options page", async () => {
+  const host = "[::1]";
+  const cookiePage = newCookiePage(driver);
+  const serverUrl = `http://${host}:${port}`;
+  const cookies = [
+    {
+      name: "cookie",
+      setCookieHeader: `cookie=123; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    },
+    {
+      name: "cookie-with-domain",
+      setCookieHeader: `cookie-with-domain=456; Domain=${host}; Max-Age=${TWO_WEEKS}; SameSite=Strict`,
+    },
+  ];
+
+  const now = Date.now() / 1000;
+  await driver.navigate().to(serverUrl);
+  for (const cookie of cookies) {
+    await cookiePage.submitNewCookie(cookie.name, cookie.setCookieHeader);
+  }
+
+  await optionsPage.go();
+  await optionsPage.selectLimit("1 week");
+
+  await driver.navigate().to(serverUrl);
+  const driverOptions = driver.manage();
+  const cookiesBeforeLimiting = await Promise.all(
+    cookies.map((cookie) => driverOptions.getCookie(cookie.name)),
+  );
+  for (const cookie of cookiesBeforeLimiting) {
+    expect(cookie.expiry).toBeGreaterThan(now + TWO_WEEKS - 5);
+    expect(cookie.expiry).toBeLessThan(now + TWO_WEEKS + 5);
+  }
+
+  await optionsPage.go();
+  const violatingCookiesDescription =
+    await optionsPage.violatingCookiesDescription();
+  expect(violatingCookiesDescription).toBe(
+    "There are 2 cookies that violate the above limit.",
+  );
+
+  const violatingCookiesDisabledExplanation =
+    await optionsPage.violatingCookiesDisabledExplanation();
+  expect(violatingCookiesDisabledExplanation).toMatch(/IPv6/);
+});
 
 test("pre-existing, third-party, long-lived cookies can be limited in the Options page", async () => {
   await testPreExistingThirdPartyCookies(
