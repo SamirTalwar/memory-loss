@@ -14,7 +14,8 @@ export const parseDate: (dateString: string) => Date | undefined = (() => {
     dec: 11,
   };
   const iso8601Date = {
-    matcher: /^(\d{4})-(\d{2})-(\d{2})(?:t| +)(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?: +utc|z|[\+\-][\d:]+)$/,
+    matcher:
+      /^(\d{4})-(\d{2})-(\d{2})(?:t| +)(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?: +utc|z|[\+\-][\d:]+)$/,
     extractors: [1, 2, 3, 4, 5, 6],
   };
   const rfc1123Date = {

@@ -28,6 +28,10 @@ clean:
 run: build/production
 	web-ext run --source-dir=build/production
 
+.PHONY: format
+format:
+	prettier --write src test/unit test/e2e
+
 .PHONY: check
 check: build lint test
 
@@ -35,6 +39,7 @@ check: build lint test
 lint: build/production
 	tsc --noEmit
 	web-ext lint --source-dir=build/production
+	prettier --check src test/unit test/e2e
 
 .PHONY: test
 test: test/unit test/e2e

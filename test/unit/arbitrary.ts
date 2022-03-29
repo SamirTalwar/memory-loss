@@ -46,10 +46,12 @@ export const setCookieHeader: fc.Arbitrary<string> = (() => {
       ]
         .filter(([, value]) => value)
         .map(([name, value]) => `${name}=${value}`);
-      const attributesWithoutValues = ([
-        ["Secure", cookie.secure],
-        ["HttpOnly", cookie.httpOnly],
-      ] as [string, boolean][])
+      const attributesWithoutValues = (
+        [
+          ["Secure", cookie.secure],
+          ["HttpOnly", cookie.httpOnly],
+        ] as [string, boolean][]
+      )
         .filter(([, value]) => value)
         .map(([name]) => name);
       return fc.shuffledSubarray(

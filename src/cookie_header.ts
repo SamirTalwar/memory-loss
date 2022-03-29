@@ -74,21 +74,25 @@ const fromAttributes = (
     const attribute = attributes.find(isAttributeName(attributeName));
     return optionally(([, value]) => value || "", attribute);
   };
-  const updateAttribute = (attributeName: string, attributeValue: string) => (
-    attributes: Attributes,
-  ): Attributes => {
-    const index = attributes.findIndex(isAttributeName(attributeName));
-    if (index < 0) {
-      return attributes.concat([[attributeName, attributeValue]]);
-    } else {
-      return attributes
-        .slice(0, index)
-        .concat([[attributeName, attributeValue]], attributes.slice(index + 1));
-    }
-  };
-  const removeAttribute = (attributeName: string) => (
-    attributes: Attributes,
-  ): Attributes => attributes.filter(isNotAttributeName(attributeName));
+  const updateAttribute =
+    (attributeName: string, attributeValue: string) =>
+    (attributes: Attributes): Attributes => {
+      const index = attributes.findIndex(isAttributeName(attributeName));
+      if (index < 0) {
+        return attributes.concat([[attributeName, attributeValue]]);
+      } else {
+        return attributes
+          .slice(0, index)
+          .concat(
+            [[attributeName, attributeValue]],
+            attributes.slice(index + 1),
+          );
+      }
+    };
+  const removeAttribute =
+    (attributeName: string) =>
+    (attributes: Attributes): Attributes =>
+      attributes.filter(isNotAttributeName(attributeName));
 
   return {
     name() {
