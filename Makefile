@@ -36,7 +36,7 @@ format:
 check: build lint test
 
 .PHONY: lint
-lint: build/production
+lint: build/production test/vendor
 	tsc --noEmit
 	web-ext lint --source-dir=build/production
 	prettier --check src test/unit test/e2e
